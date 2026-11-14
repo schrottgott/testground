@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="theme-color" content="#f6eee7" id="metaThemeColor">
-  <title>Wellen-Tracker</title>
+  <title>Still-Tracker</title>
   <!--
     ============================================================
-    Wellen-Tracker · Version 10 (Dark Mode)
+    Still-Tracker · Version 21 (Dark Mode)
     Datum: 11.11.2026
-    Entwickelt von: Lumo (Proton) im Auftrag von SchrottGott
-    Neu in v10 (aufbauend auf v9 / v7.2 mit allen Einbauten):
+    Entwickelt von: Lumo (Proton) im Auftrag der Nutzerin/des Nutzers
+    Neu in v21 (aufbauend auf v20):
     - Dark Mode mit 3 Modi: Manuell (Standard), Zeitfenster, OS folgen
     - Schnellumschalter (Mond/Sonne) im Kopf, immer erreichbar
     - Sanfter Farbwechsel (Transition) statt abruptem Umsprung
     - Zeitstrahl und alle Elemente folgen dem Theme
-    - Theme-Einstellung wird mit den Messdaten gespeichert
+    - Theme-Einstellung wird gespeichert und im Backup mitgeführt
     ============================================================
   -->
   <style>
@@ -25,27 +25,26 @@
       --card: #fffaf6;
       --ink: #342a27;
       --muted: #796b65;
-      --wave: #bd6553;
-      --pause: #d9b989;
       --line: #eaded5;
-      --button: #9d7650;
-      --water: #7d9bb8;
-      --note: #a3814f;
-      --surface: #fffdfb;
-      --soft: #f7eee7;
+      --left: #bd6553;
+      --left-bg: #f9ede9;
+      --left-border: #e8cbc3;
+      --right: #d9b989;
+      --right-strong: #cfa75f;
+      --right-ink: #5f4c22;
+      --right-bg: #faf3e7;
+      --right-border: #e8dcc4;
+      --accent: #9d7650;
+      --surface: #fffdfb;       /* Graph, Listenzeilen */
+      --soft: #f7eee7;          /* Timer-Kasten, Gesamt-Statistik */
       --btn-bg: white;
-      --water-bg: #eef3f8;
-      --water-border: #cfdcec;
-      --water-ink: #46647f;
-      --water-row: #f4f8fc;
-      --note-bg: #fdf9f1;
-      --note-border: #e8dcc4;
-      --danger-border: #e7c9c1;
+      --danger-border: #d8b8ae;
       --danger-bg: #fff5f2;
       --danger-ink: #8b3e31;
+      --danger-running: #8b3e31;
       --backdrop: #342a2788;
-      --track: #f0e7e0;
       --shadow-card: #4a30200a;
+      --shadow-pop: #4a302033;
     }
 
     html[data-theme="dark"] {
@@ -54,30 +53,30 @@
       --card: #29221e;
       --ink: #f0e7df;
       --muted: #a3938a;
-      --wave: #c97a67;
-      --pause: #c9a877;
       --line: #3d342e;
-      --button: #b08863;
-      --water: #7d9bb8;
-      --note: #b9955e;
+      --left: #c97a67;
+      --left-bg: #3a2b26;
+      --left-border: #553d36;
+      --right: #d9b989;
+      --right-strong: #d8b070;
+      --right-ink: #2e2513;
+      --right-bg: #352c20;
+      --right-border: #554730;
+      --accent: #b08863;
       --surface: #211b17;
       --soft: #241d19;
       --btn-bg: #332b26;
-      --water-bg: #24303c;
-      --water-border: #3c4d5e;
-      --water-ink: #a9c3da;
-      --water-row: #26313d;
-      --note-bg: #31281e;
-      --note-border: #55462c;
       --danger-border: #5d423b;
       --danger-bg: #3a2723;
       --danger-ink: #e8a596;
+      --danger-running: #a04c3d;
       --backdrop: #000000aa;
-      --track: #352c25;
       --shadow-card: #00000033;
+      --shadow-pop: #00000066;
     }
 
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
 
     body {
       margin: 0;
@@ -87,38 +86,20 @@
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     }
 
-    /* v10: sanfter Theme-Übergang statt abruptem Umsprung */
-    body, .card, button, select, textarea, dialog, .wave-row, .history-row,
-    .graph-wrap, .stat, .avg, .small-button, .help-head, .help-close,
-    .dialog-close, .viewing-banner {
+    /* v21: sanfter Theme-Übergang statt abruptem Umsprung */
+    body, .card, .live-timer, button, select, input, dialog, textarea,
+    .feed-row, .graph-wrap, .stat, .last-feed, .tap-detail, .help-head,
+    .help-close, dialog::backdrop, .live-note {
       transition: background-color .45s ease, border-color .45s ease,
                   color .45s ease, box-shadow .45s ease;
     }
 
-    #fatalError {
-      display: none;
-      margin: 0;
-      padding: 12px 16px;
-      background: #ffe1db;
-      color: #8b1f0e;
-      font-size: .85rem;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      border-bottom: 2px solid #d95f49;
-    }
+    main { width: min(100%, 560px); margin: 0 auto; padding: 26px 18px 38px; }
+    header { margin-bottom: 18px; text-align: center; position: relative; }
+    h1 { margin: 0 0 16px; font-size: 1.6rem; }
+    .muted { color: var(--muted); }
 
-    main {
-      width: min(100%, 560px);
-      margin: 0 auto;
-      padding: 26px 18px 38px;
-    }
-
-    header { margin-bottom: 22px; text-align: center; position: relative; }
-    h1 { margin: 0 0 5px; font-size: 1.65rem; }
-    header p, .muted { color: var(--muted); }
-    header p { margin: 0; }
-
-    /* v10: Schnellumschalter hell/dunkel */
+    /* v21: Schnellumschalter hell/dunkel */
     .theme-quick {
       position: absolute;
       top: -2px;
@@ -142,177 +123,181 @@
       box-shadow: 0 8px 24px var(--shadow-card);
     }
 
-    .current { text-align: center; }
-    .session-date { margin: 0 0 12px; color: var(--muted); font-size: .84rem; }
-    .phase { margin: 0 0 5px; color: var(--muted); }
-
-    .timer {
-      margin: 0 0 16px;
-      font-size: clamp(3.2rem, 16vw, 5rem);
-      font-weight: 650;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -.05em;
-    }
-
-    button, select, textarea { font: inherit; }
+    button, select, input { font: inherit; }
     button { cursor: pointer; touch-action: manipulation; }
     button:disabled { cursor: not-allowed; opacity: .55; }
 
-    button:focus-visible, select:focus-visible, textarea:focus-visible {
-      outline: 3px solid var(--ink);
-      outline-offset: 3px;
+    .controls { display: flex; gap: 8px; }
+
+    .live-timer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 13px;
+      background: var(--soft);
+      border: 1px solid var(--line);
     }
 
-    .main-button {
-      width: 100%;
-      min-height: 62px;
-      border: 0;
-      border-radius: 17px;
-      background: var(--wave);
-      color: white;
-      font-size: 1.12rem;
+    .live-timer.recording {
+      background: var(--left-bg);
+      border-color: var(--left-border);
+    }
+
+    .live-timer.tappable { cursor: pointer; }
+
+    .live-status {
+      color: var(--muted);
+      font-size: .78rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
       font-weight: 700;
     }
 
-    .main-button.pause-mode { background: var(--button); }
+    .live-time {
+      font-size: 2rem;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .live-note {
+      margin-top: 2px;
+      font-size: .8rem;
+      font-style: italic;
+      color: var(--ink);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .side-btn {
+      min-height: 50px;
+      flex: 1;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      font-weight: 700;
+      opacity: .55;
+    }
+
+    .side-btn.left { background: var(--left); color: white; }
+    .side-btn.right { background: var(--right); color: var(--right-ink); }
+    .side-btn.selected { opacity: 1; border-color: var(--ink); }
+
+    .big-toggle {
+      width: 100%;
+      min-height: 62px;
+      margin-top: 14px;
+      border: 0;
+      border-radius: 15px;
+      background: var(--left);
+      color: white;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+
+    .big-toggle.running { background: var(--danger-running); }
+
+    .last-feed {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 13px;
+      box-shadow: 0 6px 18px var(--shadow-pop);
+      font-size: .9rem;
+      line-height: 1.55;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .last-feed.side-left { background: var(--left); color: white; }
+    .last-feed.side-right { background: var(--right-strong); color: var(--right-ink); }
+
+    .last-feed strong { font-size: .98rem; display: block; margin-bottom: 2px; }
+    .last-feed .feed-note {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255,255,255,.35);
+      font-style: italic;
+      overflow-wrap: anywhere;
+    }
+
     .hint { min-height: 1.35em; margin: 12px 0 0; color: var(--muted); font-size: .86rem; }
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 17px;
-    }
-
-    .stat {
-      min-width: 0;
-      padding: 12px 6px;
-      border-radius: 13px;
-      background: var(--soft);
-    }
-
-    .stat span { display: block; color: var(--muted); font-size: .75rem; }
-    .stat strong {
-      display: block;
-      margin-top: 4px;
-      font-size: 1rem;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .water-status {
-      margin: 13px 0 0;
-      padding: 9px 12px;
-      border-radius: 12px;
-      background: var(--water-bg);
-      color: var(--water-ink);
-      font-size: .86rem;
-      font-weight: 650;
-    }
+    .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .stat { padding: 11px 6px; border-radius: 13px; }
+    .stat.stat-left { background: var(--left-bg); border: 1px solid var(--left-border); }
+    .stat.stat-right { background: var(--right-bg); border: 1px solid var(--right-border); }
+    .stat.stat-total { background: var(--soft); border: 1px solid var(--line); grid-column: 1 / -1; }
+    .stat span { display: block; color: var(--muted); font-size: .74rem; }
+    .stat strong { display: block; margin-top: 4px; font-size: 1rem; font-variant-numeric: tabular-nums; }
 
     h2 { margin: 24px 0 11px; font-size: 1.15rem; }
 
-    .graph-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 24px 0 11px;
-    }
-
-    .graph-head h2 { margin: 0; }
-    .legend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: .84rem; }
-    .dot { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 50%; }
-    .dash { display: inline-block; width: 3px; height: 12px; margin-right: 5px; border-radius: 2px; }
-
-    .graph-controls {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin: 0 0 8px;
-    }
-
-    .zoom-buttons { display: flex; gap: 7px; }
-    .small-button {
-      min-width: 42px;
-      min-height: 40px;
-      padding: 5px 11px;
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      background: var(--btn-bg);
-      color: var(--ink);
-    }
-
-    .small-button.active {
-      background: var(--button);
-      border-color: var(--button);
-      color: white;
-    }
-
-    .overlay-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 18px;
-      margin: 0 0 8px;
-      color: var(--muted);
-      font-size: .84rem;
-    }
-
-    .check { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-    .check input { width: 17px; height: 17px; accent-color: var(--button); }
-
     .graph-wrap {
       width: 100%;
-      overflow: hidden;
       border: 1px solid var(--line);
       border-radius: 14px;
       background: var(--surface);
-      touch-action: none;
+      overflow: hidden;
+      cursor: pointer;
     }
 
-    canvas { display: block; width: 100%; height: 190px; }
-    .graph-hint { margin: 9px 0 0; color: var(--muted); font-size: .79rem; }
+    canvas { display: block; width: 100%; height: 140px; touch-action: pan-y; }
 
-    .average-controls {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 13px;
-      color: var(--muted);
-      font-size: .88rem;
-    }
+    .legend { display: flex; gap: 12px; margin-top: 8px; color: var(--muted); font-size: .84rem; }
+    .dot { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 50%; }
 
-    select {
+    .timeline-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .span-group { display: flex; flex: 1 1 100%; gap: 7px; }
+
+    .span-button, .nav-button {
       min-height: 42px;
-      padding: 7px 30px 7px 10px;
+      padding: 5px 12px;
       border: 1px solid var(--line);
       border-radius: 11px;
       background: var(--btn-bg);
       color: var(--ink);
+      font-size: .86rem;
     }
 
-    .avg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .avg {
-      padding: 12px 6px;
-      border-radius: 13px;
-      background: var(--soft);
-      text-align: center;
+    .span-group .span-button { flex: 1; }
+    .span-button.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .nav-button.wide { flex: 1; }
+
+    .graph-status { margin: 9px 0 0; color: var(--muted); font-size: .79rem; min-height: 1.2em; }
+
+    .tap-detail {
+      margin: 10px 2px 2px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px var(--shadow-pop);
+      font-size: .88rem;
+      line-height: 1.5;
     }
 
-    .avg span { display: block; color: var(--muted); font-size: .73rem; }
-    .avg strong {
-      display: block;
-      margin-top: 4px;
-      font-size: .98rem;
-      font-variant-numeric: tabular-nums;
+    .tap-detail.side-left { background: var(--left); color: white; }
+    .tap-detail.side-right { background: var(--right-strong); color: var(--right-ink); }
+    .tap-detail .tap-title { font-weight: 700; font-size: .97rem; }
+
+    .tap-detail .tap-close {
+      float: right;
+      margin: -3px -4px 0 8px;
+      padding: 2px 9px;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(255,255,255,.25);
+      color: inherit;
+      font-size: 1rem;
+      cursor: pointer;
     }
 
     details > summary { padding: 4px 0; cursor: pointer; font-weight: 650; }
     .list { display: grid; gap: 9px; margin-top: 13px; }
 
-    .wave-row, .history-row {
+    .feed-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -323,22 +308,30 @@
       background: var(--surface);
     }
 
-    .wave-row.water-row {
-      border-color: var(--water-border);
-      background: var(--water-row);
+    .feed-row.side-left { border-color: var(--left-border); background: var(--left-bg); }
+    .feed-row.side-right { border-color: var(--right-border); background: var(--right-bg); }
+
+    .side-badge {
+      display: inline-block;
+      min-width: 22px;
+      padding: 1px 7px;
+      margin-right: 8px;
+      border-radius: 8px;
+      font-size: .74rem;
+      font-weight: 700;
     }
 
-    .wave-row.note-row {
-      border-color: var(--note-border);
-      background: var(--note-bg);
-    }
+    .side-left .side-badge { background: var(--left); color: white; }
+    .side-right .side-badge { background: var(--right-strong); color: var(--right-ink); }
 
-    .wave-info, .history-info { min-width: 0; }
-    .wave-title, .history-title { font-weight: 650; }
-    .wave-detail, .history-detail { margin-top: 3px; color: var(--muted); font-size: .82rem; }
-    .wave-detail.note-text { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+    .feed-info { min-width: 0; }
+    .feed-title { font-weight: 650; }
+    .feed-detail { margin-top: 3px; color: var(--muted); font-size: .82rem; }
+    .feed-detail.feed-note { color: var(--ink); font-style: italic; overflow-wrap: anywhere; }
 
-    .delete-button, .history-button {
+    .row-buttons { display: flex; gap: 6px; flex: 0 0 auto; }
+
+    .delete-button, .history-button, .note-button {
       flex: 0 0 auto;
       min-height: 38px;
       padding: 6px 10px;
@@ -349,81 +342,10 @@
       font-size: .84rem;
     }
 
-    .delete-button {
-      border-color: var(--danger-border);
-      background: var(--danger-bg);
-      color: var(--danger-ink);
-    }
-
-    .delete-button.water-delete {
-      border-color: var(--water-border);
-      background: var(--btn-bg);
-      color: var(--water-ink);
-    }
+    .note-button { border-color: var(--accent); }
 
     .empty { padding: 12px 0; color: var(--muted); text-align: center; font-size: .9rem; }
     .note { margin: 18px 2px 0; color: var(--muted); font-size: .79rem; line-height: 1.5; }
-
-    .action-button {
-      width: 100%;
-      min-height: 50px;
-      margin-top: 12px;
-      border: 1px solid var(--danger-border);
-      border-radius: 14px;
-      background: var(--danger-bg);
-      color: var(--danger-ink);
-      font-weight: 650;
-    }
-
-    .action-button.secondary {
-      border-color: var(--line);
-      background: var(--btn-bg);
-      color: var(--ink);
-    }
-
-    .event-inputs { margin-top: 13px; display: grid; gap: 9px; }
-
-    .water-button {
-      width: 100%;
-      min-height: 48px;
-      border: 1px solid var(--water-border);
-      border-radius: 13px;
-      background: var(--water-bg);
-      color: var(--water-ink);
-      font-weight: 650;
-    }
-
-    .note-input { display: grid; gap: 8px; }
-
-    textarea {
-      width: 100%;
-      min-height: 58px;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--btn-bg);
-      color: var(--ink);
-      resize: vertical;
-    }
-
-    .note-button {
-      min-height: 42px;
-      padding: 6px 14px;
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      background: var(--soft);
-      color: var(--ink);
-      font-weight: 650;
-    }
-
-    .viewing-banner {
-      margin: 0 0 14px;
-      padding: 10px;
-      border-radius: 12px;
-      background: var(--soft);
-      color: var(--muted);
-      font-size: .86rem;
-    }
 
     .setting-row {
       display: flex;
@@ -445,6 +367,20 @@
     }
 
     #themeWindowRow[hidden] { display: none !important; }
+
+    .action-button {
+      width: 100%;
+      min-height: 50px;
+      margin-top: 12px;
+      border: 1px solid var(--danger-border);
+      border-radius: 14px;
+      background: var(--danger-bg);
+      color: var(--danger-ink);
+      font-weight: 650;
+    }
+
+    .action-button.secondary { border-color: var(--line); background: var(--btn-bg); color: var(--ink); }
+    .backup-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 
     dialog {
       width: min(100%, 520px);
@@ -487,160 +423,86 @@
     .help-body ul { margin: 4px 0 10px; padding-left: 20px; }
     .help-body li { margin: 3px 0; }
 
-    dialog.detail-dialog {
-      width: min(92vw, 420px);
-      max-width: 92vw;
-    }
-
-    .dialog-inner { padding: 20px; }
-
-    .dialog-title { margin: 0; font-size: 1.06rem; font-weight: 700; }
-    .dialog-sub { margin: 5px 0 0; color: var(--muted); font-size: .84rem; }
-    .dialog-body {
-      margin: 13px 0 0;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      line-height: 1.55;
-    }
-
-    .dialog-close {
-      width: 100%;
-      min-height: 46px;
-      margin-top: 16px;
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      background: var(--btn-bg);
-      color: var(--ink);
-      font-weight: 650;
-    }
-
     @media (max-width: 360px) {
       main { padding-right: 12px; padding-left: 12px; }
       .card { padding: 16px 13px; }
-      .stat span, .avg span { font-size: .68rem; }
-      .stat strong, .avg strong { font-size: .88rem; }
+      .stat span { font-size: .68rem; }
+      .stat strong { font-size: .88rem; }
     }
   </style>
 </head>
 <body>
-  <div id="fatalError" role="alert"></div>
+  <div id="saveWarning" role="alert" style="display:none;margin:0;padding:12px 16px;background:#ffe1db;color:#8b1f0e;font-size:.85rem;line-height:1.5;border-bottom:2px solid #d95f49;"></div>
 
   <main>
     <header>
-      <h1>Wellen-Tracker</h1>
+      <h1>Still-Tracker</h1>
       <button class="theme-quick" id="themeQuick" type="button" title="Hell/Dunkel umschalten">🌙</button>
     </header>
 
     <div class="viewing-banner" id="viewingBanner" hidden></div>
 
-    <section class="card current" aria-live="polite">
-      <p class="session-date" id="sessionDate"></p>
-      <p class="phase" id="phase">Bereit</p>
-      <p class="timer" id="timer">00:00</p>
-      <button class="main-button" id="toggle" type="button">Welle starten</button>
-      <p class="hint" id="hint">Tippe beim Beginn einer Welle auf den Knopf.</p>
+    <section class="card" aria-live="polite">
 
-      <div class="stats">
-        <div class="stat">
-          <span>Letzte Welle</span>
-          <strong id="lastWave">—</strong>
-        </div>
-        <div class="stat">
-          <span>Wellenpause</span>
-          <strong id="lastPause">—</strong>
-        </div>
-        <div class="stat">
-          <span>Wellenabstand</span>
-          <strong id="lastInterval">—</strong>
-        </div>
+      <div class="live-timer" id="liveTimer" title="">
+        <span class="live-status" id="liveStatus"></span>
+        <span class="live-time" id="liveTime">00:00</span>
+        <span class="live-note" id="liveNote" hidden></span>
       </div>
 
-      <p class="water-status" id="waterStatus" hidden></p>
+      <div class="controls">
+        <button class="side-btn left" id="sideLeft" type="button">◀ Links</button>
+        <button class="side-btn right" id="sideRight" type="button">Rechts ▶</button>
+      </div>
+
+      <button class="big-toggle" id="bigToggle" type="button">Stillzeit starten</button>
+      <div class="last-feed" id="lastFeed" hidden title="Antippen: Notiz zur letzten Stillzeit"></div>
+      <p class="hint" id="feedHint"></p>
     </section>
 
-    <div class="graph-head">
-      <h2>Wellenverlauf</h2>
-      <div class="legend">
-        <span><i class="dot" style="background:var(--wave)"></i>Welle</span>
-        <span><i class="dot" style="background:var(--pause)"></i>Pause</span>
-        <span><i class="dash" style="background:var(--water)"></i>Blasensprung</span>
-        <span><i class="dot" style="background:var(--note)"></i>Notiz</span>
-      </div>
-    </div>
-
+    <h2>Zeitstrahl</h2>
     <section class="card">
-      <div class="graph-controls">
-        <div class="zoom-buttons">
-          <button class="small-button active" id="modeElapsed" type="button">Seit Start</button>
-          <button class="small-button" id="modeClock" type="button">Uhrzeit</button>
-        </div>
-        <div class="zoom-buttons">
-          <button class="small-button" id="zoomOut" type="button" aria-label="Herauszoomen">−</button>
-          <button class="small-button" id="zoomIn" type="button" aria-label="Hineinzoomen">+</button>
-          <button class="small-button" id="resetView" type="button">Alles</button>
-        </div>
-      </div>
       <div class="graph-wrap" id="graphWrap">
-        <canvas id="graph" aria-label="Graphischer Verlauf von Wellen und Pausen"></canvas>
+        <canvas id="feedGraph" aria-label="Zeitstrahl der Stillzeiten"></canvas>
       </div>
-      <div class="overlay-controls">
-        <label class="check"><input type="checkbox" id="showWater" checked> Blasensprung einblenden</label>
-        <label class="check"><input type="checkbox" id="showNotes" checked> Notizen einblenden</label>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--left)"></i>Links (oben)</span>
+        <span><i class="dot" style="background:var(--right-strong)"></i>Rechts (unten)</span>
       </div>
-      <p class="graph-hint">Mit zwei Fingern zoomen, mit einem Finger seitlich verschieben. Notizen und Blasensprünge antippen, um Details zu lesen.</p>
-    </section>
-
-    <h2>Durchschnittswerte</h2>
-    <section class="card">
-      <div class="average-controls">
-        <label for="averageWindow">Zeitraum:</label>
-        <select id="averageWindow">
-          <option value="10">Letzte 10 Minuten</option>
-          <option value="20">Letzte 20 Minuten</option>
-          <option value="30">Letzte 30 Minuten</option>
-          <option value="40">Letzte 40 Minuten</option>
-          <option value="50">Letzte 50 Minuten</option>
-          <option value="60">Letzte 60 Minuten</option>
-        </select>
-      </div>
-      <div class="avg-grid">
-        <div class="avg"><span>Ø Welle</span><strong id="avgWave">—</strong></div>
-        <div class="avg"><span>Ø Pause</span><strong id="avgPause">—</strong></div>
-        <div class="avg"><span>Ø Abstand</span><strong id="avgInterval">—</strong></div>
-      </div>
-    </section>
-
-    <h2>Wellendaten</h2>
-    <section class="card">
-      <div class="event-inputs">
-        <button class="water-button" id="addWater" type="button">Blasensprung dokumentieren</button>
-        <div class="note-input">
-          <textarea id="noteText" rows="2" placeholder="Notiz eintragen (z. B. Position, Befinden) …"></textarea>
-          <button class="note-button" id="addNote" type="button">Notiz speichern</button>
+      <div id="tapDetailHost"></div>
+      <div class="timeline-controls">
+        <div class="span-group">
+          <button class="span-button" data-span="1" type="button">1 Std</button>
+          <button class="span-button" data-span="3" type="button">3 Std</button>
+          <button class="span-button active" data-span="12" type="button">12 Std</button>
+          <button class="span-button" data-span="24" type="button">24 Std</button>
+          <button class="span-button" data-span="72" type="button">3 T</button>
+          <button class="span-button" data-span="168" type="button">7 T</button>
         </div>
+        <button class="nav-button" id="zoomOut" type="button" aria-label="Herauszoomen">−</button>
+        <button class="nav-button wide" id="jumpNow" type="button">Jetzt</button>
+        <button class="nav-button" id="zoomIn" type="button" aria-label="Hineinzoomen">+</button>
+        <button class="nav-button" id="panBack" type="button">◀ zurück</button>
+        <button class="nav-button" id="panForward" type="button">vor ▶</button>
       </div>
-      <details id="recordsDetails">
-        <summary id="recordsSummary">Wellendaten anzeigen</summary>
-        <div class="list" id="recordsList"></div>
-      </details>
+      <p class="graph-status" id="graphStatus"></p>
     </section>
 
-    <h2>Messungshistorie</h2>
+    <h2>Statistik</h2>
     <section class="card">
-      <details id="historyDetails">
-        <summary id="historySummary">Gespeicherte Messungen anzeigen</summary>
-        <div class="list" id="historyList"></div>
-      </details>
+      <div class="stats" id="statsBox"></div>
     </section>
 
-    <button class="action-button secondary" id="returnCurrent" type="button" hidden>
-      Zur aktuellen Messung
-    </button>
-    <button class="action-button" id="finishSession" type="button">Messung beenden</button>
-    <button class="action-button" id="newSession" type="button">Neue Messung starten</button>
 
     <h2>Einstellungen</h2>
     <section class="card">
+      <div class="setting-row">
+        <p>Nach dem Stillen die Seite …</p>
+        <select id="autoSwitch">
+          <option value="on">automatisch wechseln</option>
+          <option value="off">nicht ändern</option>
+        </select>
+      </div>
       <div class="setting-row">
         <p>Farbschema</p>
         <select id="themeMode">
@@ -658,23 +520,49 @@
       </div>
     </section>
 
+
+    <h2>Stillzeiten</h2>
+    <section class="card">
+      <details id="feedDetails">
+        <summary id="feedSummary">Einträge anzeigen</summary>
+        <div class="list" id="feedList"></div>
+      </details>
+    </section>
+
+    <h2>Messreihen</h2>
+    <section class="card">
+      <details id="historyDetails">
+        <summary id="historySummary">Gespeicherte Reihen anzeigen</summary>
+        <div class="list" id="historyList"></div>
+      </details>
+    </section>
+
+    <button class="action-button" id="finishSeries" type="button">Messreihe beenden</button>
+    <button class="action-button" id="newSeries" type="button">Neue Messreihe starten</button>
+
+    <h2>Sicherung &amp; Daten</h2>
+    <section class="card">
+      <p class="muted" style="margin:0 0 12px;font-size:.86rem">
+        Die Daten werden dauerhaft im Browser-Speicher dieses Geräts gespeichert.
+        Erstelle regelmäßig eine Sicherungsdatei und lies sie bei einem Wechsel wieder ein.
+      </p>
+      <div class="backup-controls">
+        <button class="action-button secondary" id="exportData" type="button" style="margin-top:0">Sicherung exportieren</button>
+        <button class="action-button secondary" id="importData" type="button" style="margin-top:0">Sicherung importieren</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </section>
+
     <button class="action-button secondary" id="helpButton" type="button">ℹ️ Anleitung &amp; Hilfe</button>
 
     <p class="note">
-      Messungen werden automatisch in diesem Browser gespeichert. Sie können durch das
-      Löschen der Browserdaten oder im privaten Modus verloren gehen. Der Tracker dient der
-      Zeitmessung und ersetzt keine medizinische Einschätzung.
+      Die Daten werden bei jeder Änderung sofort dauerhaft im Browser-Speicher gespeichert
+      und sind auch nach dem Schließen von App oder Browser vollständig erhalten. Sie können
+      dennoch durch das Löschen der Browserdaten oder im privaten Modus verloren gehen;
+      nutze deshalb zusätzlich den Export. Der Tracker dient der Zeitmessung und ersetzt
+      keine medizinische Einschätzung.
     </p>
   </main>
-
-  <dialog class="detail-dialog" id="detailDialog">
-    <div class="dialog-inner">
-      <h3 class="dialog-title" id="dialogTitle"></h3>
-      <p class="dialog-sub" id="dialogSub"></p>
-      <div class="dialog-body" id="dialogBody" hidden></div>
-      <button class="dialog-close" id="dialogClose" type="button">Schließen</button>
-    </div>
-  </dialog>
 
   <dialog id="helpDialog">
     <div class="help-head">
@@ -682,250 +570,164 @@
       <button class="help-close" id="helpClose" type="button">Schließen</button>
     </div>
     <div class="help-body">
-      <h4>Wellen aufzeichnen</h4>
+      <h4>Stillzeit aufzeichnen</h4>
       <ul>
-        <li><strong>Welle starten:</strong> Tippe beim Beginn einer Welle auf den großen Knopf. Der Timer läuft.</li>
-        <li><strong>Welle beenden / Pause:</strong> Ein weiterer Tipp beendet die Welle und startet automatisch die Pause.</li>
-        <li><strong>Nächste Welle:</strong> Während der Pause zeigt der Knopf „Nächste Welle starten" – ein Tipp beendet die Pause und startet die Welle.</li>
-        <li><strong>Lücken:</strong> Nach „Messung beenden" bzw. einer beendeten Phase bleibt der Timer stehen, bis du wieder auf „Welle starten" tippst. Zeiten ohne Aufzeichnung erscheinen im Verlauf als Leerstelle – nichts wird interpoliert oder aufgefüllt.</li>
+        <li><strong>Seite wählen:</strong> Tippe auf „Links" oder „Rechts" – die markierte Seite gilt für die Aufzeichnung.</li>
+        <li><strong>Starten / Beenden:</strong> Der große Button startet und beendet die Stillzeit. Ein laufender Timer zeigt die bisherige Dauer.</li>
+        <li><strong>Seitenwechsel mitten im Stillen:</strong> Wählst du während einer laufenden Aufzeichnung die andere Seite, wird der Eintrag an dieser Stelle beendet und sofort auf der neuen Seite weitergemessen – es geht keine Zeit verloren.</li>
+        <li><strong>Einstellung „Nach dem Stillen die Seite …":</strong> Mit „automatisch wechseln" stellt der Tracker nach Beenden einer Stillzeit automatisch die andere Seite ein; mit „nicht ändern" bleibt die gewählte Seite stehen.</li>
       </ul>
 
-      <h4>Statistik &amp; Durchschnittswerte</h4>
-      <p>Oben siehst du die letzte Welle, die letzte Pause und den Abstand der letzten beiden Wellen. Darunter wählbar: gemittelte Werte der letzten 10–60 Minuten.</p>
-
-      <h4>Wellenverlauf (Zeitstrahl)</h4>
+      <h4>Notizen</h4>
       <ul>
-        <li><strong>Zwei Ansichten:</strong> „Seit Start" zeigt die Zeit seit der ersten Welle (wie bisher); „Uhrzeit" zeigt stattdessen die tatsächliche Uhrzeit der Achsen-Markierungen – so lassen sich Wellen und Pausen der Tageszeit zuordnen.</li>
-        <li>Mit − / + zoomen, „Alles" zeigt den gesamten Verlauf. Zwei Finger zusammen-/auseinander zoomen, ein Finger verschiebt seitlich.</li>
-        <li>Blasensprung (gestrichelte Linie „BS") und Notizen (nummerierte Punkte N1, N2 …) können eingeblendet werden; Antippen öffnet die Details.</li>
-      </ul>
-
-      <h4>Blasensprung &amp; Notizen</h4>
-      <p>„Blasensprung dokumentieren" setzt eine Markierung an der aktuellen Zeit. Über das Textfeld legst du Notizen an (z. B. Position, Befinden). Beides erscheint im Verlauf und in der Liste; dort sind die Einträge auch einzeln löschbar.</p>
-
-      <h4>Messungen verwalten</h4>
-      <ul>
-        <li>„Messung beenden" schließt die Aufzeichnung ab; sie bleibt in der Historie. Per „Welle starten" wird sie fortgesetzt.</li>
-        <li>Über „Öffnen" in der Messungshistorie kannst du alte Messungen ansehen; „Zur aktuellen Messung" bringt dich zurück.</li>
-        <li>Das Schließen des Browsers beendet keine laufende Messung – sie läuft beim nächsten Öffnen weiter.</li>
+        <li><strong>Während des Stillens:</strong> Tippe auf den Timer-Kasten oben, um eine Notiz zur laufenden Stillzeit zu erfassen. Sie wandert beim Beenden automatisch mit dem Eintrag mit.</li>
+        <li><strong>Nach dem Stillen:</strong> Tippe auf die „Zuletzt"-Box unter dem Start-Button, um eine Notiz zur letzten Stillzeit zu erfassen oder zu ändern.</li>
+        <li><strong>Nachträglich:</strong> Jede Stillzeit in der Liste unten hat einen „Notiz"-Button. Leeres Feld + OK entfernt die Notiz wieder.</li>
       </ul>
 
       <h4>Farbschema (hell/dunkel)</h4>
       <ul>
         <li><strong>Manuell:</strong> Umschalten über den Mond/Sonne-Button oben rechts oder unter Einstellungen. Das ist der Standard.</li>
         <li><strong>Zeitfenster:</strong> Dunkel automatisch in einem Zeitraum (z. B. 20:00–07:00, auch über Mitternacht möglich), sonst hell.</li>
-        <li><strong>Wie System/Browser:</strong> Folgt der Hell/Dunkel-Einstellung deines Geräts, auch bei späteren Änderungen.</li>
+        <li><strong>Wie System/Browser:</strong> Folgt der Hell/Dunkel-Einstellung deines Geräts, auch bei later Änderungen.</li>
         <li>Der Mond/Sonne-Button wirkt in jedem Modus: ein Tipp schaltet sofort um und stellt gleichzeitig auf „manuell" um.</li>
         <li>Der Wechsel erfolgt weich überblendet statt abrupt.</li>
       </ul>
+
+      <h4>Zeitstrahl</h4>
+      <ul>
+        <li>Die Zeitraum-Buttons (1 Std bis 7 Tage) legen das Fenster fest, − / + zoomen darüber hinaus.</li>
+        <li>„◀ zurück" / „vor ▶" blättern nur innerhalb der vorhandenen Daten – über den ältesten Eintrag hinaus kann nicht geblättert werden.</li>
+        <li>Einen Balken antippen zeigt Details zur Stillzeit. Der Zeitstrahl läuft live mit, auch während des Stillens.</li>
+        <li>Der Zoom- und Blickzustand wird pro Messreihe gemerkt und beim erneuten Öffnen wiederhergestellt.</li>
+      </ul>
+
+      <h4>Messreihen</h4>
+      <ul>
+        <li>Das Schließen des Browsers oder der Seite beendet <strong>keine</strong> Messreihe – beim nächsten Öffnen wird die aktuelle Reihe automatisch fortgeführt, auch eine laufende Stillzeit läuft weiter.</li>
+        <li>Jede gespeicherte Reihe lässt sich über „Öffnen" ansehen und wird dabei sofort wieder zur aktuellen Messreihe – egal ob sie vorher beendet wurde oder nicht.</li>
+        <li>Jede Reihe in der Historie kann über „Löschen" endgültig entfernt werden (mit Bestätigung).</li>
+        <li><strong>Speichern:</strong> Jede Änderung wird sofort gespeichert – zusätzlich auch beim Verbergen oder Schließen der Seite/App. Falls das Speichern verweigert wird (z. B. Privatmodus), erscheint oben eine deutliche Warnung.</li>
+      </ul>
+
+      <h4>Sicherung</h4>
+      <p>Mit „Sicherung exportieren" speicherst du alle Daten als JSON-Datei (Notizen und Farbschema-Einstellung eingeschlossen), mit „Sicherung importieren" stellst du sie wieder her (überschreibt die aktuellen Daten).</p>
     </div>
   </dialog>
 
   <script>
-    (function () {
+    (() => {
       "use strict";
 
-      /* Fehler-Selbsttest: zeigt jeden Laufzeit-/Ladefehler als rote
-         Meldung oben auf der Seite an, damit nichts mehr "stumm" bleibt. */
-      function showFatal(message) {
-        var box = document.getElementById("fatalError");
-        if (!box) return;
+      const STORAGE_KEY = "still-tracker-data-v3";
+      const LEGACY_KEYS = ["still-tracker-data-v2", "still-tracker-data-v1"];
+      const $ = id => document.getElementById(id);
+      const HOUR = 60 * 60 * 1000;
+
+      /* ============ Zustand ============ */
+
+      let currentSide = "left";
+      let series = [];
+      let currentId = null;
+      let selectedId = null;
+      let autoSwitch = "on";
+
+      // v21: Theme-Zustand (manuell | window | os)
+      let theme = { mode: "os", dark: false, start: "20:00", end: "07:00" };
+
+      let viewSpanHours = 12;
+      let viewRight = null;
+      let zoomSpanHours = null;
+
+      let tapTargets = [];
+      let openDetail = null;
+
+      function showSaveWarning(detail) {
+        const box = $("saveWarning");
         box.style.display = "block";
-        box.textContent = "Fehler im Wellen-Tracker: " + message;
+        box.textContent =
+          "Wichtig: Die Daten konnten NICHT dauerhaft gespeichert werden" +
+          (detail ? " (" + detail + ")" : "") +
+          ". Dies kann im privaten/incognito Modus oder bei vollem Speicher passieren. " +
+          "Neue Stillzeiten würden beim Schließen verloren gehen – bitte exportiere deine " +
+          "Daten über „Sicherung exportieren“ und nutze ggf. einen normalen (nicht privaten) Browsermodus.";
       }
-      window.addEventListener("error", function (event) {
-        showFatal((event.message || "Unbekannter Fehler") +
-          (event.lineno ? " (Zeile " + event.lineno + ")" : ""));
-      });
 
-      /* ==========================================================
-         Wellen-Tracker v10
-         Entwickelt von SchrottGott — 11.11.2026
-         v10: Dark Mode (manuell/Zeitfenster/OS) mit sanftem Übergang.
-         ========================================================== */
-      var AUTHOR_TAG = "Entwickelt von SchrottGott — Wellen-Tracker v10, 2026-11-11";
-      try { console.info(AUTHOR_TAG); } catch (e) { /* ignoriert */ }
-
-      var STORAGE_KEY = "wellen-tracker-sessions-v1";
-      var OLD_STORAGE_KEY = "wellen-tracker-v1";
-      var MIN_VIEW = 10 * 1000;
-      var MAX_VIEW = 24 * 60 * 60 * 1000;
-
-      function $(id) { return document.getElementById(id); }
-
-      /* Kompatible Hilfsfunktionen statt .at() / .findLast() */
-      function lastItem(arr) {
-        return arr && arr.length ? arr[arr.length - 1] : undefined;
-      }
-      function findLastMatch(arr, test) {
-        for (var i = arr.length - 1; i >= 0; i--) {
-          if (test(arr[i], i)) return arr[i];
+      function persistState() {
+        try {
+          const session = activeSeries();
+          if (session) {
+            session.view = {
+              span: viewSpanHours,
+              zoom: zoomSpanHours,
+              rightAgo: viewRight === null ? null : Date.now() - viewRight
+            };
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            currentSide, series, currentId, autoSwitch, theme
+          }));
+        } catch (error) {
+          showSaveWarning(error && error.name ? error.name : "unbekannter Fehler");
         }
-        return undefined;
       }
 
-      var canvas = $("graph");
-      var wrap = $("graphWrap");
-      var ctx = canvas.getContext("2d");
-
-      var sessions = [];
-      var currentId = null;
-      var selectedId = null;
-      var viewSpan = 20 * 60 * 1000;
-      var gesture = null;
-      var timeMode = "elapsed";
-      var viewRight = null;
-
-      var lastFirst = 0;
-      var lastRight = 0;
-      var lastCenter = 0;
-      var lastVisibleSpan = viewSpan;
-      var lastDataEnd = 0;
-      var hitTargets = [];
-      var touchStart = null;
-
-      /* v10: Theme-Zustand (manuell | window | os) */
-      var theme = { mode: "manual", dark: false, start: "20:00", end: "07:00" };
+      function scheduleSave() {
+        persistState();
+      }
 
       function makeId() {
-        return Date.now() + "-" + Math.random().toString(36).slice(2, 9);
+        return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       }
 
-      function makeSession() {
-        return {
-          id: makeId(),
-          startedAt: Date.now(),
-          endedAt: null,
-          finished: false,
-          segments: [],
-          events: []
-        };
+      function makeSeries() {
+        return { id: makeId(), startedAt: Date.now(), endedAt: null, finished: false, entries: [], view: null };
       }
 
-      function activeSession() {
-        for (var i = 0; i < sessions.length; i++) {
-          if (sessions[i].id === currentId) return sessions[i];
+      function activeSeries() { return series.find(s => s.id === currentId) || null; }
+      function selectedSeries() { return series.find(s => s.id === selectedId) || activeSeries(); }
+      function isCurrentView() { return selectedId === currentId; }
+      function entries(s) { return s ? s.entries || [] : []; }
+      function activeFeed() {
+        return entries(activeSeries()).find(e => e.end === null) || null;
+      }
+
+      function applyViewState(session) {
+        const v = session?.view;
+        if (v && Number.isFinite(v.span) && v.span > 0) {
+          viewSpanHours = v.span;
+          zoomSpanHours = Number.isFinite(v.zoom) && v.zoom > 0 ? v.zoom : null;
+          viewRight = v.rightAgo === null || !Number.isFinite(v.rightAgo)
+            ? null
+            : Math.max(0, Date.now() - v.rightAgo);
+        } else {
+          viewSpanHours = 12;
+          zoomSpanHours = null;
+          viewRight = null;
         }
-        return null;
+        syncSpanButtons();
       }
 
-      function selectedSession() {
-        for (var i = 0; i < sessions.length; i++) {
-          if (sessions[i].id === selectedId) return sessions[i];
-        }
-        return activeSession();
-      }
-
-      function isCurrentView() {
-        return selectedId === currentId;
-      }
-
-      function load() {
-        try {
-          var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-
-          if (saved && saved.sessions && saved.sessions.length) {
-            sessions = [];
-            for (var i = 0; i < saved.sessions.length; i++) {
-              var s = saved.sessions[i];
-              if (!s || typeof s.id !== "string" || !s.segments || !s.segments.length) continue;
-              var cleanSegments = [];
-              for (var j = 0; j < s.segments.length; j++) {
-                var seg = s.segments[j];
-                if (seg && (seg.type === "wave" || seg.type === "pause") &&
-                    typeof seg.start === "number" &&
-                    (seg.end === null || typeof seg.end === "number")) {
-                  cleanSegments.push(seg);
-                }
-              }
-              var cleanEvents = [];
-              if (s.events && s.events.length) {
-                for (var k = 0; k < s.events.length; k++) {
-                  var ev = s.events[k];
-                  if (ev && (ev.type === "water" || ev.type === "note") &&
-                      typeof ev.at === "number") {
-                    cleanEvents.push({
-                      type: ev.type,
-                      at: ev.at,
-                      text: typeof ev.text === "string" ? ev.text : ""
-                    });
-                  }
-                }
-              }
-              sessions.push({
-                id: s.id,
-                startedAt: typeof s.startedAt === "number" ? s.startedAt : Date.now(),
-                endedAt: typeof s.endedAt === "number" ? s.endedAt : null,
-                finished: !!s.finished,
-                segments: cleanSegments,
-                events: cleanEvents
-              });
-            }
-            currentId = saved.currentId;
-            var found = false;
-            for (var m = 0; m < sessions.length; m++) {
-              if (sessions[m].id === currentId) { found = true; break; }
-            }
-            if (!found) currentId = null;
-
-            /* v10: Theme-Einstellungen mitladen (alte Daten ohne Theme ok) */
-            loadTheme(saved.theme);
-          } else {
-            /* Übernahme alter Messdaten aus der Vorversion. */
-            var old = JSON.parse(localStorage.getItem(OLD_STORAGE_KEY) || "null");
-            if (old && old.segments && old.segments.length) {
-              var migrated = makeSession();
-              migrated.segments = old.segments;
-              var firstSeg = null;
-              for (var n = 0; n < old.segments.length; n++) {
-                if (old.segments[n].type === "wave") { firstSeg = old.segments[n]; break; }
-              }
-              if (firstSeg) migrated.startedAt = firstSeg.start;
-              sessions.push(migrated);
-              currentId = migrated.id;
-            }
-          }
-        } catch (err) {
-          sessions = [];
-          currentId = null;
-        }
-
-        if (!activeSession()) {
-          var fresh = makeSession();
-          sessions.push(fresh);
-          currentId = fresh.id;
-        }
-
-        selectedId = currentId;
-        save();
-      }
-
-      function save() {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            sessions: sessions,
-            currentId: currentId,
-            theme: theme
-          }));
-        } catch (err) {
-          $("hint").textContent = "Der Browser konnte die Messung nicht speichern.";
-        }
-      }
-
-      function closeOpenSegment(session, at) {
-        if (!session) return;
-        var open = findLastMatch(session.segments, function (segment) {
-          return segment.end === null;
+      function syncSpanButtons() {
+        const matched = zoomSpanHours === null;
+        document.querySelectorAll(".span-button").forEach(b => {
+          b.classList.toggle("active", matched && Number(b.dataset.span) === viewSpanHours);
         });
-        if (open) open.end = at;
       }
+
+      /* ============ Formatierung ============ */
 
       function fmt(ms) {
-        if (!isFinite(ms) || ms < 0) return "—";
-        var sec = Math.floor(ms / 1000);
-        var min = Math.floor(sec / 60);
-        var rem = sec % 60;
-        return (min < 10 ? "0" : "") + min + ":" + (rem < 10 ? "0" : "") + rem;
+        if (!Number.isFinite(ms) || ms < 0) return "—";
+        const sec = Math.floor(ms / 1000);
+        return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+      }
+
+      function timeOfDay(ts) {
+        return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function dayLabel(ts) {
+        return new Date(ts).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
       }
 
       function dateTime(ts) {
@@ -935,80 +737,51 @@
         });
       }
 
-      function timeOfDay(ts) {
-        return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      function agoText(ts, now) {
+        const minutes = Math.max(0, Math.round((now - ts) / 60000));
+        if (minutes < 1) return "gerade eben";
+        if (minutes < 60) return `vor ${minutes} Min.`;
+        const hours = Math.floor(minutes / 60);
+        const rest = minutes % 60;
+        if (hours < 24) return rest ? `vor ${hours} Std. ${rest} Min.` : `vor ${hours} Std.`;
+        const days = Math.floor(hours / 24);
+        return `vor ${days} Tag${days === 1 ? "" : "en"}`;
       }
 
-      function agoLabel(ms) {
-        if (!isFinite(ms) || ms < 0) return "";
-        var sec = Math.floor(ms / 1000);
-        if (sec < 60) return "gerade eben";
-        var min = Math.floor(sec / 60);
-        if (min < 60) return "vor " + min + " min";
-        var h = Math.floor(min / 60);
-        return "vor " + h + " h " + (min % 60 < 10 ? "0" : "") + (min % 60) + " min";
-      }
-
-      function waves(session) {
-        if (!session) return [];
-        return session.segments.filter(function (s) { return s.type === "wave"; });
-      }
-
-      function pauses(session) {
-        if (!session) return [];
-        return session.segments.filter(function (s) { return s.type === "pause"; });
-      }
-
-      function waterEvents(session) {
-        if (!session) return [];
-        return session.events.filter(function (e) { return e.type === "water"; });
-      }
-
-      function noteEvents(session) {
-        if (!session) return [];
-        return session.events.filter(function (e) { return e.type === "note"; });
-      }
-
-      function duration(segment, now) {
-        var end = segment.end === null || segment.end === undefined ? now : segment.end;
-        return Math.max(0, end - segment.start);
-      }
-
-      function average(values) {
-        if (!values.length) return null;
-        var sum = 0;
-        for (var i = 0; i < values.length; i++) sum += values[i];
-        return sum / values.length;
+      function isSameDay(a, b) {
+        const da = new Date(a), db = new Date(b);
+        return da.getFullYear() === db.getFullYear() &&
+               da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
       }
 
       function escapeHtml(text) {
         return String(text)
-          .split("&").join("&amp;")
-          .split("<").join("&lt;")
-          .split(">").join("&gt;");
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
       }
 
-      /* ===================== Theme (v10) ===================== */
+      /* ============ Theme (v21) ============ */
 
-      var LIGHT_THEME_COLOR = "#f6eee7";
-      var DARK_THEME_COLOR = "#1c1714";
+      const LIGHT_THEME_COLOR = "#f6eee7";
+      const DARK_THEME_COLOR = "#1c1714";
 
       function minutesOf(hhmm) {
-        var parts = String(hhmm || "").split(":");
-        var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
-        if (!isFinite(h) || !isFinite(m)) return null;
+        const parts = String(hhmm || "").split(":");
+        const h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+        if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
         return h * 60 + m;
       }
 
       function inWindow(now) {
-        var cur = now.getHours() * 60 + now.getMinutes();
-        var s = minutesOf(theme.start), e = minutesOf(theme.end);
+        const cur = now.getHours() * 60 + now.getMinutes();
+        const s = minutesOf(theme.start), e = minutesOf(theme.end);
         if (s === null || e === null || s === e) return false;
+        // Fenster über Mitternacht (z. B. 20:00–07:00)
         return s < e ? (cur >= s && cur < e) : (cur >= s || cur < e);
       }
 
-      var osDarkQuery = window.matchMedia
-        ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+      const osDarkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
       function themeShouldBeDark(now) {
         if (theme.mode === "os") return osDarkQuery ? osDarkQuery.matches : false;
@@ -1016,1049 +789,946 @@
         return theme.dark;
       }
 
-      function loadTheme(raw) {
-        if (!raw || typeof raw !== "object") return;
-        if (raw.mode === "manual" || raw.mode === "window" || raw.mode === "os") {
-          theme.mode = raw.mode;
-        }
-        theme.dark = !!raw.dark;
-        if (typeof raw.start === "string" && /^\d{2}:\d{2}$/.test(raw.start)) theme.start = raw.start;
-        if (typeof raw.end === "string" && /^\d{2}:\d{2}$/.test(raw.end)) theme.end = raw.end;
-      }
-
       function applyTheme(forceRedraw) {
-        var dark = themeShouldBeDark(new Date());
+        const dark = themeShouldBeDark(new Date());
         document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
         $("metaThemeColor").setAttribute("content", dark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
         $("themeQuick").textContent = dark ? "☀️" : "🌙";
         $("themeQuick").title = dark ? "Helles Design aktivieren" : "Dunkles Design aktivieren";
-        if (forceRedraw) drawGraph(Date.now());
+        if (forceRedraw) drawTimeline(Date.now());
       }
 
       function setThemeMode(mode) {
         theme.mode = mode;
-        if (mode === "manual") {
-          theme.dark = document.documentElement.getAttribute("data-theme") === "dark";
-        }
+        if (mode === "manual") theme.dark = document.documentElement.getAttribute("data-theme") === "dark";
         $("themeMode").value = mode;
         $("themeWindowRow").hidden = mode !== "window";
         applyTheme(true);
-        save();
+        scheduleSave();
       }
 
-      $("themeQuick").addEventListener("click", function () {
-        var dark = document.documentElement.getAttribute("data-theme") === "dark";
+      $("themeQuick").addEventListener("click", () => {
+        // Sofort umschalten und auf manuell umstellen (dauerhaftes Übersteuern)
+        const dark = document.documentElement.getAttribute("data-theme") === "dark";
         theme.mode = "manual";
         theme.dark = !dark;
         $("themeMode").value = "manual";
         $("themeWindowRow").hidden = true;
         applyTheme(true);
-        save();
+        scheduleSave();
       });
 
-      $("themeMode").addEventListener("change", function () { setThemeMode($("themeMode").value); });
-      $("themeStart").addEventListener("change", function () {
-        theme.start = $("themeStart").value; applyTheme(true); save();
-      });
-      $("themeEnd").addEventListener("change", function () {
-        theme.end = $("themeEnd").value; applyTheme(true); save();
-      });
+      $("themeMode").addEventListener("change", () => setThemeMode($("themeMode").value));
+      $("themeStart").addEventListener("change", () => { theme.start = $("themeStart").value; applyTheme(true); scheduleSave(); });
+      $("themeEnd").addEventListener("change", () => { theme.end = $("themeEnd").value; applyTheme(true); scheduleSave(); });
       if (osDarkQuery) {
-        var osHandler = function () { if (theme.mode === "os") applyTheme(true); };
-        if (osDarkQuery.addEventListener) osDarkQuery.addEventListener("change", osHandler);
-        else if (osDarkQuery.addListener) osDarkQuery.addListener(osHandler);
+        const handler = () => { if (theme.mode === "os") applyTheme(true); };
+        if (osDarkQuery.addEventListener) osDarkQuery.addEventListener("change", handler);
+        else if (osDarkQuery.addListener) osDarkQuery.addListener(handler);
       }
 
-      function renderCurrent(now) {
-        var session = selectedSession();
-        var currentView = isCurrentView();
-        var segments = session ? session.segments : [];
-        var active = findLastMatch(segments, function (s) { return s.end === null; });
-        var isWave = currentView && active && active.type === "wave";
-        var isPause = currentView && active && active.type === "pause";
-        var sessionFinished = currentView && !!(session && session.finished);
+      /* ============ Notizen ============ */
 
-        $("sessionDate").textContent = session
-          ? "Beginn: " + dateTime(session.startedAt) +
-            (session.endedAt ? " · beendet: " + dateTime(session.endedAt) : "")
-          : "";
-
-        $("viewingBanner").hidden = currentView;
-        $("viewingBanner").textContent = currentView
-          ? ""
-          : "Du siehst eine gespeicherte Messung. Sie kann hier nicht verändert werden.";
-
-        $("phase").textContent = !currentView
-          ? (session && session.finished ? "Messung beendet" : "Gespeicherte Messung")
-          : isWave
-            ? "Welle läuft"
-            : isPause
-              ? "Wellenpause"
-              : sessionFinished
-                ? "Messung beendet – fortsetzbar"
-                : "Bereit";
-
-        $("timer").textContent = isWave ? fmt(now - active.start) : "00:00";
-
-        var toggle = $("toggle");
-        toggle.disabled = false;
-        toggle.textContent = isWave
-          ? "Welle beenden"
-          : isPause
-            ? "Nächste Welle starten"
-            : "Welle starten";
-
-        toggle.classList.toggle("pause-mode", isPause);
-        $("hint").textContent = !currentView
-          ? "Wechsle zurück zur aktuellen Messung, um weiter aufzuzeichnen."
-          : isWave
-            ? "Tippe am Ende der Welle erneut."
-            : isPause
-              ? "Der Timer steht während der Pause. Tippe beim Beginn der nächsten Welle."
-              : sessionFinished
-                ? "Diese Messung war beendet – tippe „Welle starten“, um sie fortzusetzen. Die Zwischenzeit bleibt frei."
-                : "Tippe beim Beginn einer Welle auf den Knopf.";
-
-        $("finishSession").disabled = !currentView || sessionFinished;
-        $("finishSession").textContent = sessionFinished ? "Messung beendet" : "Messung beenden";
-        $("returnCurrent").hidden = currentView;
-
-        var waterButton = $("addWater");
-        waterButton.disabled = !currentView || sessionFinished;
-        waterButton.textContent = sessionFinished && currentView
-          ? "Messung beendet"
-          : "Blasensprung dokumentieren";
-        $("noteText").disabled = !currentView || sessionFinished;
-        $("addNote").disabled = !currentView || sessionFinished;
-
-        var ws = waves(session);
-        var ps = pauses(session);
-        var lastWave = lastItem(ws);
-        var lastPause = lastItem(ps);
-        var interval = null;
-        if (ws.length >= 2) interval = ws[ws.length - 1].start - ws[ws.length - 2].start;
-
-        $("lastWave").textContent = lastWave ? fmt(duration(lastWave, now)) : "—";
-        $("lastPause").textContent = lastPause ? fmt(duration(lastPause, now)) : "—";
-        $("lastInterval").textContent = interval === null ? "—" : fmt(interval);
-
-        var lastWater = lastItem(waterEvents(session));
-        var waterStatus = $("waterStatus");
-        if (lastWater) {
-          waterStatus.hidden = false;
-          waterStatus.textContent = "Blasensprung: " + timeOfDay(lastWater.at) +
-            " Uhr · " + agoLabel(now - lastWater.at);
-        } else {
-          waterStatus.hidden = true;
-        }
-
-        renderAverages(session, now);
+      function promptNote(entry) {
+        if (!entry) return;
+        const when = `${dayLabel(entry.start)} ${timeOfDay(entry.start)} Uhr, ${entry.side === "left" ? "links" : "rechts"}`;
+        const input = prompt(
+          `Notiz zur Stillzeit (${when}):\n(Leer lassen und OK = Notiz löschen)`,
+          entry.note || ""
+        );
+        if (input === null) return;
+        entry.note = input.trim();
+        scheduleSave();
+        renderFeed(Date.now());
       }
 
-      function renderAverages(session, now) {
-        if (!session) {
-          $("avgWave").textContent = "—";
-          $("avgPause").textContent = "—";
-          $("avgInterval").textContent = "—";
-          return;
-        }
+      /* ============ Laden & Migration ============ */
 
-        var windowMs = Number($("averageWindow").value) * 60 * 1000;
-        var from = now - windowMs;
-        var ws = waves(session);
-        var ps = pauses(session);
-
-        var waveValues = [];
-        var pauseValues = [];
-        var intervalValues = [];
-
-        for (var i = 0; i < ws.length; i++) {
-          if (ws[i].start >= from && ws[i].end !== null && ws[i].end !== undefined) {
-            waveValues.push(duration(ws[i], now));
-          }
-        }
-        for (var j = 0; j < ps.length; j++) {
-          if (ps[j].start >= from && ps[j].end !== null && ps[j].end !== undefined) {
-            pauseValues.push(duration(ps[j], now));
-          }
-        }
-        for (var k = 1; k < ws.length; k++) {
-          if (ws[k].start >= from) intervalValues.push(ws[k].start - ws[k - 1].start);
-        }
-
-        var avgWave = average(waveValues);
-        var avgPause = average(pauseValues);
-        var avgInterval = average(intervalValues);
-
-        $("avgWave").textContent = avgWave === null ? "—" : fmt(avgWave);
-        $("avgPause").textContent = avgPause === null ? "—" : fmt(avgPause);
-        $("avgInterval").textContent = avgInterval === null ? "—" : fmt(avgInterval);
-      }
-
-      function renderList(session, now) {
-        var list = $("recordsList");
-        var ws = waves(session);
-        var water = waterEvents(session);
-        var notes = noteEvents(session);
-        var editable = isCurrentView() && !(session && session.finished);
-
-        var summary = "Wellendaten anzeigen (" + ws.length;
-        if (water.length) summary += " · " + water.length + " " + (water.length > 1 ? "Blasensprünge" : "Blasensprung");
-        if (notes.length) summary += " · " + notes.length + " Notiz" + (notes.length > 1 ? "en" : "");
-        summary += ")";
-        $("recordsSummary").textContent = summary;
-
-        if (!ws.length && !water.length && !notes.length) {
-          list.innerHTML = '<div class="empty">Noch keine Wellen aufgezeichnet.</div>';
-          return;
-        }
-
-        var items = [];
-        for (var i = 0; i < ws.length; i++) {
-          items.push({ kind: "wave", at: ws[i].start, wave: ws[i], num: i + 1 });
-        }
-        for (var j = 0; j < water.length; j++) {
-          items.push({ kind: "water", at: water[j].at, event: water[j], num: j + 1 });
-        }
-        for (var k = 0; k < notes.length; k++) {
-          items.push({ kind: "note", at: notes[k].at, event: notes[k], num: k + 1 });
-        }
-        items.sort(function (a, b) { return b.at - a.at; });
-
-        var html = "";
-        for (var n = 0; n < items.length; n++) {
-          var item = items[n];
-          var time = timeOfDay(item.at);
-
-          if (item.kind === "wave") {
-            var length = (item.wave.end === null || item.wave.end === undefined)
-              ? "läuft"
-              : fmt(item.wave.end - item.wave.start);
-            html +=
-              '<div class="wave-row">' +
-                '<div class="wave-info">' +
-                  '<div class="wave-title">Welle ' + item.num + ' · ' + time + '</div>' +
-                  '<div class="wave-detail">Dauer: ' + length + '</div>' +
-                '</div>' +
-                (editable
-                  ? '<button class="delete-button" type="button" data-delete-wave="' + item.wave.start + '">Löschen</button>'
-                  : "") +
-              '</div>';
-          } else if (item.kind === "water") {
-            html +=
-              '<div class="wave-row water-row">' +
-                '<div class="wave-info">' +
-                  '<div class="wave-title">Blasensprung · ' + time + ' Uhr</div>' +
-                  '<div class="wave-detail">' + agoLabel(now - item.at) + '</div>' +
-                '</div>' +
-                (editable
-                  ? '<button class="delete-button water-delete" type="button" data-delete-water="' + item.at + '">Löschen</button>'
-                  : "") +
-              '</div>';
-          } else {
-            html +=
-              '<div class="wave-row note-row">' +
-                '<div class="wave-info">' +
-                  '<div class="wave-title">Notiz N' + item.num + ' · ' + time + ' Uhr</div>' +
-                  '<div class="wave-detail note-text">' + escapeHtml(item.event.text) + '</div>' +
-                '</div>' +
-                (editable
-                  ? '<button class="delete-button" type="button" data-delete-note="' + item.at + '">Löschen</button>'
-                  : "") +
-              '</div>';
-          }
-        }
-
-        list.innerHTML = html;
-
-        var deleteWaveButtons = list.querySelectorAll("[data-delete-wave]");
-        for (var a = 0; a < deleteWaveButtons.length; a++) {
-          deleteWaveButtons[a].addEventListener("click", function () {
-            deleteWave(Number(this.getAttribute("data-delete-wave")));
-          });
-        }
-        var deleteWaterButtons = list.querySelectorAll("[data-delete-water]");
-        for (var b = 0; b < deleteWaterButtons.length; b++) {
-          deleteWaterButtons[b].addEventListener("click", function () {
-            deleteEvent("water", Number(this.getAttribute("data-delete-water")));
-          });
-        }
-        var deleteNoteButtons = list.querySelectorAll("[data-delete-note]");
-        for (var c = 0; c < deleteNoteButtons.length; c++) {
-          deleteNoteButtons[c].addEventListener("click", function () {
-            deleteEvent("note", Number(this.getAttribute("data-delete-note")));
-          });
-        }
-      }
-
-      function renderHistory() {
-        var list = $("historyList");
-        var ordered = sessions.slice().sort(function (a, b) { return b.startedAt - a.startedAt; });
-
-        $("historySummary").textContent = "Gespeicherte Messungen anzeigen (" + sessions.length + ")";
-
-        if (!ordered.length) {
-          list.innerHTML = '<div class="empty">Noch keine gespeicherten Messungen.</div>';
-          return;
-        }
-
-        var html = "";
-        for (var i = 0; i < ordered.length; i++) {
-          var session = ordered[i];
-          var isCurrent = session.id === currentId;
-          var isSelected = session.id === selectedId;
-          var label = isCurrent ? "Aktuell" : (session.finished ? "Beendet" : "Gespeichert");
-          var count = waves(session).length;
-          var extras = [];
-          if (waterEvents(session).length) extras.push(waterEvents(session).length + "× Blasensprung");
-          if (noteEvents(session).length) extras.push(noteEvents(session).length + " Notiz(en)");
-
-          html +=
-            '<div class="history-row">' +
-              '<div class="history-info">' +
-                '<div class="history-title">' + dateTime(session.startedAt) + '</div>' +
-                '<div class="history-detail">' + label + ' · ' + count + ' Wellen' +
-                  (extras.length ? " · " + extras.join(" · ") : "") + '</div>' +
-              '</div>' +
-              '<div style="display:flex;gap:6px;flex:0 0 auto">' +
-                '<button class="history-button" type="button" data-open="' + session.id + '"' +
-                  (isSelected ? " disabled" : "") + '>' +
-                  (isSelected ? "Angezeigt" : "Öffnen") +
-                '</button>' +
-                '<button class="delete-button" type="button" data-del="' + session.id + '">Löschen</button>' +
-              '</div>' +
-            '</div>';
-        }
-
-        list.innerHTML = html;
-
-        var openButtons = list.querySelectorAll("[data-open]");
-        for (var j = 0; j < openButtons.length; j++) {
-          openButtons[j].addEventListener("click", function () {
-            selectedId = this.getAttribute("data-open");
-            viewRight = null;
-            render();
-          });
-        }
-
-        var delButtons = list.querySelectorAll("[data-del]");
-        for (var k = 0; k < delButtons.length; k++) {
-          delButtons[k].addEventListener("click", function () {
-            deleteHistory(this.getAttribute("data-del"));
-          });
-        }
-      }
-
-      function deleteHistory(id) {
-        var session = null;
-        for (var i = 0; i < sessions.length; i++) {
-          if (sessions[i].id === id) { session = sessions[i]; break; }
-        }
-        if (!session) return;
-
-        var isCurrent = session.id === currentId;
-        if (!confirm("Diese Messung (Beginn " + dateTime(session.startedAt) + ") endgültig löschen? Dies kann nicht rückgängig gemacht werden.")) {
-          return;
-        }
-
-        var kept = [];
-        for (var j = 0; j < sessions.length; j++) {
-          if (sessions[j].id !== id) kept.push(sessions[j]);
-        }
-        sessions = kept;
-
-        if (isCurrent) {
-          if (!sessions.length) {
-            var fresh = makeSession();
-            sessions.push(fresh);
-          }
-          currentId = sessions[sessions.length - 1].id;
-        }
-        if (selectedId === id) selectedId = currentId;
-
-        save();
-        render();
-      }
-
-      function deleteWave(start) {
-        var session = activeSession();
-        if (!session || !isCurrentView() || session.finished) return;
-
-        var ws = waves(session);
-        var index = -1;
-        for (var i = 0; i < ws.length; i++) {
-          if (ws[i].start === start) { index = i; break; }
-        }
-        if (index < 0) return;
-
-        if (!confirm("Diese Welle löschen? Ihre Dauer und die folgende Pause werden der vorherigen Pause zugeschlagen, falls eine vorhanden ist.")) {
-          return;
-        }
-
-        var wave = ws[index];
-        var previousWave = index > 0 ? ws[index - 1] : null;
-        var nextWave = index < ws.length - 1 ? ws[index + 1] : null;
-
-        var previousPause = null;
-        if (previousWave) {
-          var prevEnd = previousWave.end !== null && previousWave.end !== undefined
-            ? previousWave.end : previousWave.start;
-          for (var p = 0; p < session.segments.length; p++) {
-            var seg = session.segments[p];
-            if (seg.type === "pause" && seg.start >= prevEnd && seg.start < wave.start) {
-              previousPause = seg;
-            }
-          }
-        }
-
-        var waveEnd = wave.end !== null && wave.end !== undefined ? wave.end : wave.start;
-        var followingPause = null;
-        for (var q = 0; q < session.segments.length; q++) {
-          var seg2 = session.segments[q];
-          if (seg2.type === "pause" && seg2.start >= waveEnd &&
-              (!nextWave || seg2.start < nextWave.start)) {
-            followingPause = seg2;
-          }
-        }
-
-        if (previousPause) {
-          previousPause.end = followingPause
-            ? followingPause.end
-            : wave.end;
-        }
-
-        var removeMap = {};
-        removeMap[wave.start + "-" + wave.type] = true;
-        if (followingPause) removeMap[followingPause.start + "-" + followingPause.type] = true;
-
-        if (!previousWave && !previousPause) {
-          for (var r = 0; r < session.segments.length; r++) {
-            var seg3 = session.segments[r];
-            if (seg3.type === "pause" && seg3.end !== null && seg3.end <= wave.start) {
-              removeMap[seg3.start + "-" + seg3.type] = true;
-            }
-          }
-        }
-
-        var kept = [];
-        for (var s = 0; s < session.segments.length; s++) {
-          var seg4 = session.segments[s];
-          if (!removeMap[seg4.start + "-" + seg4.type]) kept.push(seg4);
-        }
-        session.segments = kept;
-
-        save();
-        render();
-      }
-
-      function deleteEvent(type, at) {
-        var session = activeSession();
-        if (!session || !isCurrentView() || session.finished) return;
-
-        var label = type === "water" ? "Diesen Blasensprung" : "Diese Notiz";
-        if (!confirm(label + " löschen?")) return;
-
-        var kept = [];
-        for (var i = 0; i < session.events.length; i++) {
-          var ev = session.events[i];
-          if (!(ev.type === type && ev.at === at)) kept.push(ev);
-        }
-        session.events = kept;
-
-        save();
-        render();
-      }
-
-      function addWater() {
-        var session = activeSession();
-        if (!session || selectedId !== currentId || session.finished) return;
-
-        session.events.push({ type: "water", at: Date.now(), text: "" });
-        save();
-        render();
-        $("recordsDetails").open = true;
-      }
-
-      function addNote() {
-        var session = activeSession();
-        if (!session || selectedId !== currentId || session.finished) return;
-
-        var field = $("noteText");
-        var text = field.value.replace(/^\s+|\s+$/g, "");
-        if (!text) {
-          field.focus();
-          return;
-        }
-
-        session.events.push({ type: "note", at: Date.now(), text: text });
-        field.value = "";
-        save();
-        render();
-        $("recordsDetails").open = true;
-      }
-
-      function openDetailDialog(target, now) {
-        var title = $("dialogTitle");
-        var sub = $("dialogSub");
-        var body = $("dialogBody");
-
-        if (target.type === "note") {
-          title.textContent = "Notiz N" + target.num + " · " + timeOfDay(target.event.at) + " Uhr";
-          sub.textContent = agoLabel(now - target.event.at);
-          body.hidden = false;
-          body.textContent = target.event.text || "(Kein Text)";
-        } else {
-          title.textContent = "Blasensprung · " + timeOfDay(target.event.at) + " Uhr";
-          sub.textContent = agoLabel(now - target.event.at);
-          body.hidden = true;
-          body.textContent = "";
-        }
-
-        $("detailDialog").showModal();
-      }
-
-      function pad2(value) {
-        return value < 10 ? "0" + value : String(value);
-      }
-
-      function axisLabel(mode, elapsedMs, absoluteTs) {
-        if (mode === "clock") {
-          var d = new Date(absoluteTs);
-          return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
-        }
-        var seconds = Math.max(0, Math.floor(elapsedMs / 1000));
-        var hours = Math.floor(seconds / 3600);
-        var minutes = Math.floor((seconds % 3600) / 60);
-        var remainder = seconds % 60;
-
-        if (hours > 0) {
-          return hours + ":" + pad2(minutes) + ":" + pad2(remainder);
-        }
-        if (minutes > 0) {
-          return minutes + ":" + pad2(remainder) + " min";
-        }
-        return remainder + " sec";
-      }
-
-      function resizeCanvas() {
-        var rect = canvas.getBoundingClientRect();
-        var dpr = window.devicePixelRatio || 1;
-        canvas.width = Math.max(1, Math.round(rect.width * dpr));
-        canvas.height = Math.max(1, Math.round(rect.height * dpr));
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        drawGraph(Date.now());
-      }
-
-      function roundRectPath(x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.closePath();
-      }
-
-      /* v10: Canvas-Farben aus dem aktuellen Theme lesen */
-      function themeColors() {
-        var cs = getComputedStyle(document.documentElement);
-        function get(name, fallback) {
-          var value = cs.getPropertyValue(name).trim();
-          return value || fallback;
-        }
+      function sanitizeEntry(e) {
+        if (!e || (e.side !== "left" && e.side !== "right")) return null;
+        if (!Number.isFinite(e.start)) return null;
+        if (e.end !== null && !Number.isFinite(e.end)) return null;
         return {
-          bg: get("--surface", "#fffdfb"),
-          track: get("--track", "#f0e7e0"),
-          grid: get("--line", "#eee4dc"),
-          text: get("--muted", "#796b65"),
-          wave: get("--wave", "#bd6553"),
-          pause: get("--pause", "#d9b989"),
-          water: get("--water", "#7d9bb8"),
-          note: get("--note", "#a3814f")
+          side: e.side, start: e.start, end: e.end,
+          note: typeof e.note === "string" ? e.note : ""
         };
       }
 
-      function drawGraph(now) {
-        var tc = themeColors();
-        var session = selectedSession();
-        var segments = session ? session.segments : [];
-        var rect = canvas.getBoundingClientRect();
-        var w = rect.width;
-        var h = rect.height;
-        if (!w || !h) return;
-
-        ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = tc.bg;
-        ctx.fillRect(0, 0, w, h);
-
-        hitTargets = [];
-
-        if (!segments.length) {
-          ctx.fillStyle = tc.text;
-          ctx.font = "14px system-ui, sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("Dein Verlauf erscheint hier", w / 2, h / 2);
-          return;
-        }
-
-        var first = segments[0].start;
-        var dataEnd = session.finished && session.endedAt ? session.endedAt : now;
-        for (var i = 0; i < segments.length; i++) {
-          var segEnd = segments[i].end !== null && segments[i].end !== undefined ? segments[i].end : now;
-          if (segEnd > dataEnd) dataEnd = segEnd;
-        }
-
-        var available = Math.max(0, dataEnd - first);
-        var visibleSpan = Math.min(viewSpan, Math.max(available, 1));
-
-        var right = viewRight === null ? dataEnd : Math.min(viewRight, dataEnd);
-        var left = Math.max(first, right - visibleSpan);
-        if (viewRight !== null) viewRight = Math.max(viewRight, first + visibleSpan);
-
-        var actualSpan = Math.max(1, right - left);
-
-        lastFirst = first;
-        lastRight = right;
-        lastCenter = (left + right) / 2;
-        lastVisibleSpan = visibleSpan;
-        lastDataEnd = dataEnd;
-
-        var padL = 14;
-        var padR = 14;
-        var chartW = w - padL - padR;
-        var y = 56;
-        var barH = 38;
-
-        function mapX(time) {
-          return padL + ((time - left) / actualSpan) * chartW;
-        }
-
-        ctx.strokeStyle = tc.grid;
-        ctx.lineWidth = 1;
-        ctx.fillStyle = tc.text;
-        ctx.font = "11px system-ui, sans-serif";
-        ctx.textAlign = "center";
-
-        var divisions = 4;
-        for (var d = 0; d <= divisions; d++) {
-          var x = padL + chartW * d / divisions;
-          ctx.beginPath();
-          ctx.moveTo(x, 32);
-          ctx.lineTo(x, 132);
-          ctx.stroke();
-
-          var time = left + actualSpan * d / divisions;
-          ctx.fillText(axisLabel(timeMode, time - first, time), x, 155);
-        }
-
-        ctx.fillStyle = tc.track;
-        roundRectPath(padL, y, chartW, barH, 9);
-        ctx.fill();
-
-        ctx.save();
-        roundRectPath(padL, y, chartW, barH, 9);
-        ctx.clip();
-
-        for (var s = 0; s < segments.length; s++) {
-          var segment = segments[s];
-          var end = segment.end !== null && segment.end !== undefined ? segment.end : now;
-          var x1 = mapX(segment.start);
-          var x2 = mapX(end);
-          if (x2 < padL || x1 > w - padR) continue;
-
-          ctx.fillStyle = segment.type === "wave" ? tc.wave : tc.pause;
-          ctx.fillRect(x1, y, Math.max(2, x2 - x1), barH);
-        }
-        ctx.restore();
-
-        if ($("showWater").checked) {
-          var waters = waterEvents(session);
-          for (var wi = 0; wi < waters.length; wi++) {
-            var wEvent = waters[wi];
-            if (wEvent.at < left || wEvent.at > right) continue;
-            var wx = mapX(wEvent.at);
-            if (wx < padL || wx > w - padR) continue;
-
-            ctx.save();
-            ctx.strokeStyle = tc.water;
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 4]);
-            ctx.beginPath();
-            ctx.moveTo(wx, y - 8);
-            ctx.lineTo(wx, y + barH + 6);
-            ctx.stroke();
-            ctx.restore();
-
-            ctx.fillStyle = tc.water;
-            ctx.font = "bold 10px system-ui, sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("BS", wx, y - 13);
-
-            hitTargets.push({
-              type: "water",
-              event: wEvent,
-              num: wi + 1,
-              x: wx,
-              top: y - 28,
-              bottom: y + barH + 14,
-              halfWidth: 30
-            });
-          }
-        }
-
-        if ($("showNotes").checked) {
-          var notes = noteEvents(session);
-          ctx.font = "10px system-ui, sans-serif";
-          for (var ni = 0; ni < notes.length; ni++) {
-            var nEvent = notes[ni];
-            if (nEvent.at < left || nEvent.at > right) continue;
-            var nx = mapX(nEvent.at);
-            if (nx < padL || nx > w - padR) continue;
-
-            ctx.fillStyle = tc.note;
-            ctx.beginPath();
-            ctx.arc(nx, y + barH + 12, 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = tc.text;
-            ctx.textAlign = "left";
-            ctx.fillText("N" + (ni + 1), nx + 7, y + barH + 16);
-
-            hitTargets.push({
-              type: "note",
-              event: nEvent,
-              num: ni + 1,
-              x: nx,
-              y: y + barH + 12,
-              radius: 34
-            });
-          }
-        }
-
-        ctx.fillStyle = tc.text;
-        ctx.font = "11px system-ui, sans-serif";
-        ctx.textAlign = "left";
-        ctx.fillText(
-          timeMode === "clock" ? "Uhrzeit" : "Zeit seit erster Welle",
-          padL, 177
-        );
+      function normalizeSessions(rawSessions, currentIdRaw) {
+        const sessions = (rawSessions || [])
+          .filter(s => s && typeof s.id === "string")
+          .map(s => ({
+            id: s.id,
+            startedAt: Number.isFinite(s.startedAt) ? s.startedAt : Date.now(),
+            endedAt: Number.isFinite(s.endedAt) ? s.endedAt : null,
+            finished: Boolean(s.finished),
+            view: s.view || null,
+            entries: (Array.isArray(s.entries) ? s.entries : []).map(sanitizeEntry).filter(Boolean)
+          }));
+        let current = currentIdRaw;
+        if (!sessions.some(s => s.id === current)) current = null;
+        return { sessions, current };
       }
 
-      function findHitTarget(clientX, clientY) {
-        if (!hitTargets.length) return null;
+      function loadTheme(raw) {
+        if (!raw || typeof raw !== "object") return;
+        if (["manual", "window", "os"].includes(raw.mode)) theme.mode = raw.mode;
+        theme.dark = Boolean(raw.dark);
+        if (typeof raw.start === "string" && /^\d{2}:\d{2}$/.test(raw.start)) theme.start = raw.start;
+        if (typeof raw.end === "string" && /^\d{2}:\d{2}$/.test(raw.end)) theme.end = raw.end;
+      }
 
-        var rect = canvas.getBoundingClientRect();
-        var px = clientX - rect.left;
-        var py = clientY - rect.top;
+      function loadAll() {
+        let data = null;
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) data = JSON.parse(raw);
+        } catch { data = null; }
 
-        var i, target, distance;
-
-        /* Blasensprünge: nur obere Hälfte (deine 75-px-Regel) */
-        for (i = 0; i < hitTargets.length; i++) {
-          target = hitTargets[i];
-          if (target.type !== "water") continue;
-          if (Math.abs(px - target.x) <= target.halfWidth &&
-              py >= target.top && py <= target.bottom && py < 75) {
-            return target;
+        if (!data || !Array.isArray(data.series)) {
+          for (const key of LEGACY_KEYS) {
+            try {
+              const legacy = JSON.parse(localStorage.getItem(key) || "null");
+              if (legacy && Array.isArray(legacy.series)) {
+                const first = legacy.series[0];
+                const migrated = first?.entries?.map(e => sanitizeEntry({
+                  side: e.side, start: e.start, end: e.end
+                })).filter(Boolean) || [];
+                data = {
+                  series: [{ id: makeId(), startedAt: Date.now(), endedAt: null, finished: false, entries: [], view: null }],
+                  currentId: null
+                };
+                data.series[0].entries = migrated;
+                if (legacy.currentSide) currentSide = legacy.currentSide;
+                if (legacy.autoSwitch === "off") autoSwitch = "off";
+                loadTheme(legacy.theme);
+                if (Array.isArray(legacy.series) && legacy.series.length > 1) {
+                  for (let i = 1; i < legacy.series.length; i++) {
+                    const s = legacy.series[i];
+                    data.series.push({
+                      id: makeId(),
+                      startedAt: Number.isFinite(s.startedAt) ? s.startedAt : Date.now(),
+                      endedAt: Number.isFinite(s.endedAt) ? s.endedAt : null,
+                      finished: Boolean(s.finished),
+                      view: null,
+                      entries: (s.entries || []).map(e => sanitizeEntry({
+                        side: e.side ?? e.entries?.[0]?.side, start: e.start, end: e.end
+                      })).filter(Boolean)
+                    });
+                  }
+                }
+                break;
+              }
+            } catch { /* weiter mit nächstem Schlüssel */ }
           }
         }
 
-        /* Notizen: nur untere Hälfte */
-        for (i = 0; i < hitTargets.length; i++) {
-          target = hitTargets[i];
-          if (target.type !== "note") continue;
-          if (Math.sqrt((px - target.x) * (px - target.x) + (py - target.y) * (py - target.y)) <= target.radius && py >= 75) {
-            return target;
+        if (data && Array.isArray(data.series)) {
+          if (data.currentSide === "left" || data.currentSide === "right") {
+            currentSide = data.currentSide;
+          }
+          if (data.autoSwitch === "off") autoSwitch = "off";
+          loadTheme(data.theme);
+          const norm = normalizeSessions(data.series, data.currentId);
+          series = norm.sessions;
+          currentId = norm.current;
+        }
+
+        if (!activeSeries()) {
+          const fresh = makeSeries();
+          series.push(fresh);
+          currentId = fresh.id;
+        }
+
+        selectedId = currentId;
+        $("autoSwitch").value = autoSwitch;
+        $("themeMode").value = theme.mode;
+        $("themeStart").value = theme.start;
+        $("themeEnd").value = theme.end;
+        $("themeWindowRow").hidden = theme.mode !== "window";
+        applyViewState(activeSeries());
+        applyTheme(false);
+        persistState();
+      }
+
+      /* ============ Kernlogik ============ */
+
+      function setSide(side) {
+        const session = activeSeries();
+        if (session && isCurrentView()) {
+          const active = activeFeed();
+          if (active && active.side !== side) {
+            active.end = Date.now();
+            session.entries.push({ side, start: Date.now(), end: null });
           }
         }
 
-        var best = null;
-        var bestDistance = Infinity;
+        currentSide = side;
+        updateControls();
+        scheduleSave();
+        renderFeed(Date.now());
+      }
 
-        for (i = 0; i < hitTargets.length; i++) {
-          target = hitTargets[i];
-          if (target.type === "water") {
-            if (py < target.top || py > target.bottom || py >= 75) continue;
-            distance = Math.abs(px - target.x);
+      function toggleFeed() {
+        const session = activeSeries();
+        if (!session || !isCurrentView()) return;
+
+        const active = activeFeed();
+        if (active) {
+          active.end = Date.now();
+          if (autoSwitch === "on") {
+            currentSide = active.side === "left" ? "right" : "left";
+          }
+          $("feedDetails").open = true;
+        } else {
+          session.entries.push({ side: currentSide, start: Date.now(), end: null });
+        }
+
+        updateControls();
+        scheduleSave();
+        renderFeed(Date.now());
+      }
+
+      /* ============ Steuerung oben ============ */
+
+      function updateControls(now = Date.now()) {
+        const session = activeSeries();
+        const active = activeFeed();
+
+        $("sideLeft").classList.toggle("selected", currentSide === "left");
+        $("sideRight").classList.toggle("selected", currentSide === "right");
+
+        const toggleBtn = $("bigToggle");
+        toggleBtn.textContent = active ? "Stillzeit beenden" : "Stillzeit starten";
+        toggleBtn.classList.toggle("running", Boolean(active));
+        toggleBtn.disabled = !isCurrentView();
+        $("sideLeft").disabled = !isCurrentView();
+        $("sideRight").disabled = !isCurrentView();
+
+        const timerBox = $("liveTimer");
+        if (isCurrentView()) {
+          timerBox.hidden = false;
+          timerBox.classList.toggle("recording", Boolean(active));
+          timerBox.classList.toggle("tappable", Boolean(active));
+          timerBox.title = active ? "Antippen: Notiz zur laufenden Stillzeit" : "";
+          $("liveStatus").textContent = active
+            ? `Aufzeichnung läuft · ${active.side === "left" ? "Links" : "Rechts"}${active.note ? " · 📝" : ""}`
+            : "Bereit";
+          $("liveTime").textContent = active ? fmt(now - active.start) : "00:00";
+
+          const noteEl = $("liveNote");
+          if (active && active.note) {
+            noteEl.hidden = false;
+            noteEl.textContent = "📝 " + active.note;
           } else {
-            distance = Math.sqrt((px - target.x) * (px - target.x) + (py - target.y) * (py - target.y));
+            noteEl.hidden = true;
+            noteEl.textContent = "";
           }
-          if (distance < bestDistance) {
-            bestDistance = distance;
-            best = target;
+        } else {
+          timerBox.hidden = true;
+        }
+      }
+
+      $("sideLeft").addEventListener("click", () => setSide("left"));
+      $("sideRight").addEventListener("click", () => setSide("right"));
+      $("bigToggle").addEventListener("click", toggleFeed);
+
+      $("liveTimer").addEventListener("click", () => {
+        const active = activeFeed();
+        if (active && isCurrentView()) promptNote(active);
+      });
+
+      $("autoSwitch").addEventListener("change", () => {
+        autoSwitch = $("autoSwitch").value;
+        scheduleSave();
+      });
+
+      /* ============ Letzte Stillzeit ============ */
+
+      function lastFinishedEntry(session) {
+        const finished = entries(session).filter(e => e.end !== null);
+        return finished.length ? finished[finished.length - 1] : null;
+      }
+
+      $("lastFeed").addEventListener("click", () => {
+        promptNote(lastFinishedEntry(activeSeries()));
+      });
+
+      function renderLastFeed(now) {
+        const box = $("lastFeed");
+        const last = lastFinishedEntry(activeSeries());
+
+        if (!last) { box.hidden = true; return; }
+        box.hidden = false;
+        box.classList.toggle("side-left", last.side === "left");
+        box.classList.toggle("side-right", last.side !== "left");
+        box.innerHTML = `
+          <strong><i class="dot" style="background:rgba(255,255,255,.85)"></i>Zuletzt: ${last.side === "left" ? "Links" : "Rechts"}</strong>
+          ${dayLabel(last.end)} · ${timeOfDay(last.end)} Uhr<br>
+          Dauer: ${fmt(last.end - last.start)} <span style="opacity:.75">(${agoText(last.end, now)})</span>
+          ${last.note ? `<div class="feed-note">📝 ${escapeHtml(last.note)}</div>` : `<div style="opacity:.7;font-size:.78rem;margin-top:4px">Antippen für Notiz</div>`}
+        `;
+      }
+
+      /* ============ Zeitstrahl ============ */
+
+      const graph = $("feedGraph");
+      const gctx = graph.getContext("2d");
+
+      // v21: Canvas-Farben aus dem aktuellen Theme lesen
+      function themeColors() {
+        const cs = getComputedStyle(document.documentElement);
+        const get = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
+        return {
+          bg: get("--surface", "#fffdfb"),
+          grid: get("--line", "#eaded5"),
+          text: get("--muted", "#796b65"),
+          mid: get("--line", "#eaded5"),
+          label: get("--muted", "#796b65"),
+          left: get("--left", "#bd6553"),
+          right: get("--right-strong", "#cfa75f")
+        };
+      }
+
+      function fillRoundRect(ctx, x, y, w, h, r) {
+        r = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.arcTo(x + w, y, x + w, y + r, r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+        ctx.lineTo(x + r, y + h);
+        ctx.arcTo(x, y + h, x, y + h - r, r);
+        ctx.lineTo(x, y + r);
+        ctx.arcTo(x, y, x + r, y, r);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function resizeGraph() {
+        const rect = graph.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        graph.width = Math.max(1, Math.round(rect.width * dpr));
+        graph.height = Math.max(1, Math.round(rect.height * dpr));
+        gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawTimeline(Date.now());
+      }
+
+      function effectiveSpanHours() { return zoomSpanHours ?? viewSpanHours; }
+
+      function moveView(direction) {
+        const span = effectiveSpanHours() * HOUR;
+        const now = Date.now();
+        const base = viewRight === null ? now : viewRight;
+
+        let candidate = base - direction * span;
+
+        const dataStart = dataStartTime(selectedSeries());
+        const earliestRight = dataStart + span;
+        candidate = Math.max(candidate, earliestRight);
+        candidate = Math.min(candidate, now);
+        viewRight = candidate >= now - 1000 ? null : candidate;
+
+        hideTapDetail();
+        drawTimeline(now);
+        scheduleSave();
+      }
+
+      function dataStartTime(session) {
+        const times = entries(session).map(e => e.start);
+        if (session?.startedAt) times.push(session.startedAt);
+        return times.length ? Math.min(...times) : Date.now();
+      }
+
+      function drawTimeline(now) {
+        try {
+          const tc = themeColors();
+          const rect = graph.getBoundingClientRect();
+          const w = rect.width;
+          const h = rect.height;
+          if (!w || !h) return;
+
+          gctx.clearRect(0, 0, w, h);
+          gctx.fillStyle = tc.bg;
+          gctx.fillRect(0, 0, w, h);
+
+          const session = selectedSeries();
+          const allEntries = entries(session).map(e => ({ ...e, end: e.end ?? now }));
+          const dataEnd = Math.max(now, ...allEntries.map(e => e.end));
+          const dataStart = dataStartTime(session);
+          const span = effectiveSpanHours() * HOUR;
+          const right = viewRight === null ? dataEnd : Math.min(viewRight, dataEnd);
+          const left = right - span;
+
+          const statusEl = $("graphStatus");
+          if (viewRight === null || right >= dataEnd - 30 * 1000) {
+            viewRight = null;
+            statusEl.textContent = "Ansicht: aktuelle Zeit · Balken antippen für Details";
+          } else {
+            statusEl.textContent =
+              `Ansicht: ${dayLabel(left)} ${timeOfDay(left)} – ${dayLabel(right)} ${timeOfDay(right)} Uhr`;
           }
-        }
 
-        if (best && bestDistance <= 14) return best;
-        return null;
-      }
+          $("panBack").disabled = (right - span) <= dataStart + 1000;
+          $("panForward").disabled = viewRight === null;
 
-      function handleTap(clientX, clientY) {
-        var target = findHitTarget(clientX, clientY);
-        if (target) openDetailDialog(target, Date.now());
-      }
+          const visible = allEntries.filter(e => e.end > left && e.start < right);
+          tapTargets = [];
 
-      function render() {
-        var now = Date.now();
-        var session = selectedSession();
-        renderCurrent(now);
-        renderList(session, now);
-        renderHistory();
-        drawGraph(now);
-      }
+          const padL = 14, padR = 14, padT = 10, padB = 40;
+          const mapX = time => padL + ((time - left) / span) * (w - padL - padR);
 
-      function setTimeMode(mode) {
-        timeMode = mode;
-        $("modeElapsed").classList.toggle("active", mode === "elapsed");
-        $("modeClock").classList.toggle("active", mode === "clock");
-        drawGraph(Date.now());
-      }
+          const spanHours = effectiveSpanHours();
+          const stepMs = spanHours <= 1 ? 15 * 60 * 1000
+            : spanHours <= 3 ? 30 * 60 * 1000
+            : spanHours <= 12 ? 2 * HOUR
+            : spanHours <= 24 ? 3 * HOUR
+            : 12 * HOUR;
+          const firstTick = Math.ceil(left / stepMs) * stepMs;
 
-      function zoomBy(factor) {
-        viewSpan = Math.max(MIN_VIEW, Math.min(MAX_VIEW, viewSpan * factor));
-        if (lastDataEnd) {
-          var target = lastCenter + viewSpan / 2;
-          viewRight = target >= lastDataEnd ? null : target;
-        }
-        drawGraph(Date.now());
-      }
+          gctx.strokeStyle = tc.grid;
+          gctx.lineWidth = 1;
+          gctx.font = "10px system-ui, sans-serif";
+          gctx.textAlign = "center";
 
-      /* ---------- Ereignisse ---------- */
+          for (let t = firstTick; t <= right; t += stepMs) {
+            const x = mapX(t);
+            if (x < padL || x > w - padR) continue;
 
-      $("toggle").addEventListener("click", function () {
-        /* Fall A: Es wird eine alte (nicht aktive) Messung angezeigt.
-           Der Tipp auf "Welle starten" macht sie JETZT zur aktiven
-           Messung und startet darin die neue Welle. */
-        if (selectedId !== currentId) {
-          if (!confirm("Diese gespeicherte Messung zur aktiven Messung machen und hier eine neue Welle starten? Die bisher aktive Messung wird dabei beendet.")) {
+            gctx.beginPath();
+            gctx.moveTo(x, padT);
+            gctx.lineTo(x, h - padB);
+            gctx.stroke();
+
+            gctx.fillStyle = tc.text;
+            gctx.fillText(timeOfDay(t), x, h - padB + 14);
+
+            const date = new Date(t);
+            if (date.getHours() === 0 && date.getMinutes() === 0) {
+              gctx.fillText(dayLabel(t), x, h - padB + 28);
+            }
+          }
+
+          if (!visible.length) {
+            gctx.fillStyle = tc.text;
+            gctx.font = "14px system-ui, sans-serif";
+            gctx.textAlign = "center";
+            gctx.fillText(
+              allEntries.length ? "In diesem Zeitraum keine Stillzeiten" : "Deine Stillzeiten erscheinen hier",
+              w / 2, h / 2
+            );
             return;
           }
 
-          var now = Date.now();
+          const midY = (padT + (h - padB - 4)) / 2;
+          const half = (midY - padT);
 
-          /* Bisher aktive Messung sauber abschließen (falls offen). */
-          var oldActive = activeSession();
-          if (oldActive && !oldActive.finished) {
-            closeOpenSegment(oldActive, now);
-            oldActive.finished = true;
-            oldActive.endedAt = now;
+          gctx.strokeStyle = tc.mid;
+          gctx.beginPath();
+          gctx.moveTo(padL, midY);
+          gctx.lineTo(w - padR, midY);
+          gctx.stroke();
+
+          gctx.fillStyle = tc.label;
+          gctx.font = "10px system-ui, sans-serif";
+          gctx.textAlign = "left";
+          gctx.fillText("Links ▲", padL + 2, midY - 4);
+          gctx.fillText("Rechts ▼", padL + 2, midY + 12);
+
+          function assignRows(list) {
+            const sorted = [...list].sort((a, b) => a.start - b.start);
+            const rows = [];
+            for (const entry of sorted) {
+              let row = 0;
+              while (rows[row]?.some(o => entry.start < o.end && o.start < entry.end)) row++;
+              (rows[row] ||= []).push(entry);
+              entry.row = row;
+            }
+            return sorted;
           }
 
-          /* Angezeigte Messung übernehmen und direkt weiterführen.
-             Der Beendet-Status fällt, die neue Welle beginnt jetzt. */
-          currentId = selectedId;
-          var session = selectedSession();
-          session.finished = false;
-          session.endedAt = null;
-          session.segments.push({ type: "wave", start: now, end: null });
+          const leftRows = assignRows(visible.filter(e => e.side === "left"));
+          const rightRows = assignRows(visible.filter(e => e.side === "right"));
+          const maxRows = Math.max(
+            leftRows.reduce((m, e) => Math.max(m, e.row + 1), 1),
+            rightRows.reduce((m, e) => Math.max(m, e.row + 1), 1)
+          );
 
-          viewRight = null;
-          save();
-          render();
+          const barH = Math.max(8, Math.min(30, (half - 8) / maxRows - 3));
+
+          function pushBar(entry, x1, x2, y) {
+            const cx1 = Math.max(x1, padL);
+            const cx2 = Math.min(x2, w - padR);
+            if (cx2 <= cx1) return;
+            tapTargets.push({
+              side: entry.side, start: entry.start, end: entry.end,
+              x: cx1, y, w: cx2 - cx1, h: barH
+            });
+          }
+
+          for (const e of leftRows) {
+            pushBar(e, mapX(e.start), mapX(e.end),
+              midY - 6 - (e.row + 1) * barH - e.row * 3);
+          }
+          for (const e of rightRows) {
+            pushBar(e, mapX(e.start), mapX(e.end),
+              midY + 6 + e.row * (barH + 3));
+          }
+
+          for (const t of tapTargets) {
+            gctx.fillStyle = t.side === "left" ? tc.left : tc.right;
+            fillRoundRect(gctx, t.x, t.y, t.w, t.h, 5);
+          }
+        } catch (error) {
+          $("graphStatus").textContent = "Fehler im Zeitstrahl: " + error.message;
+        }
+      }
+
+      /* ============ Antippen (Pointer-Events) ============ */
+
+      const TAP_RADIUS = 16;
+      const MOVE_TOLERANCE = 18;
+      const MAX_POINTER_MS = 900;
+
+      let pointerDown = null;
+
+      function hideTapDetail() {
+        openDetail = null;
+        $("tapDetailHost").innerHTML = "";
+      }
+
+      function showTapDetail(data, now) {
+        const session = selectedSeries();
+        const entry = entries(session).find(e => e.start === data.start && e.side === data.side);
+        openDetail = { ...data };
+
+        $("tapDetailHost").innerHTML = `
+          <div class="tap-detail ${data.side === "left" ? "side-left" : "side-right"}">
+            <button class="tap-close" type="button" aria-label="Schließen">×</button>
+            <div class="tap-title">Stillzeit · ${data.side === "left" ? "links" : "rechts"}</div>
+            <div>${dayLabel(data.start)} · ${timeOfDay(data.start)} Uhr</div>
+            <div>Dauer: ${fmt((data.end ?? now) - data.start)}</div>
+            <div>${agoText(data.start, now)}</div>
+            ${entry && entry.note ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.35);font-style:italic">📝 ${escapeHtml(entry.note)}</div>` : ""}
+          </div>
+        `;
+        $("tapDetailHost").querySelector(".tap-close").addEventListener("click", event => {
+          event.stopPropagation();
+          hideTapDetail();
+        });
+      }
+
+      function findTargetAt(clientX, clientY) {
+        const rect = graph.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        let best = null;
+        let bestDistance = Infinity;
+
+        for (const target of tapTargets) {
+          const dx = x < target.x ? target.x - x
+            : x > target.x + target.w ? x - (target.x + target.w) : 0;
+          const dy = y < target.y ? target.y - y
+            : y > target.y + target.h ? y - (target.y + target.h) : 0;
+          const distance = Math.hypot(dx, dy);
+
+          if (distance <= TAP_RADIUS && distance < bestDistance) {
+            best = target;
+            bestDistance = distance;
+          }
+        }
+        return best;
+      }
+
+      graph.addEventListener("pointerdown", event => {
+        pointerDown = { x: event.clientX, y: event.clientY, time: Date.now() };
+      });
+
+      graph.addEventListener("pointerup", event => {
+        if (!pointerDown) return;
+        const start = pointerDown;
+        pointerDown = null;
+
+        const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+        const duration = Date.now() - start.time;
+
+        if (moved > MOVE_TOLERANCE || duration > MAX_POINTER_MS) return;
+
+        const hit = findTargetAt(event.clientX, event.clientY);
+        if (hit) showTapDetail(hit, Date.now());
+        else hideTapDetail();
+      });
+
+      graph.addEventListener("pointercancel", () => { pointerDown = null; });
+      $("tapDetailHost").addEventListener("pointerdown", event => event.stopPropagation());
+
+      /* ============ Statistik ============ */
+
+      function renderStats(now) {
+        const session = selectedSeries();
+        const today = entries(session).filter(e =>
+          e.end !== null && isSameDay(e.start, now));
+
+        const sideStat = side => {
+          const list = today.filter(e => e.side === side);
+          const total = list.reduce((s, e) => s + (e.end - e.start), 0);
+          return { count: list.length, total: list.length ? fmt(total) : "—" };
+        };
+        const l = sideStat("left"), r = sideStat("right");
+        const grandTotal = today.reduce((s, e) => s + (e.end - e.start), 0);
+
+        $("statsBox").innerHTML = `
+          <div class="stat stat-left"><span>Links heute</span><strong>${l.count} × · ${l.total}</strong></div>
+          <div class="stat stat-right"><span>Rechts heute</span><strong>${r.count} × · ${r.total}</strong></div>
+          <div class="stat stat-total"><span>Gesamt heute</span><strong>${today.length} × · ${today.length ? fmt(grandTotal) : "—"}</strong></div>
+        `;
+      }
+
+      /* ============ Listen ============ */
+
+      function renderFeedList() {
+        const list = $("feedList");
+        const session = selectedSeries();
+        const finished = entries(session).filter(e => e.end !== null)
+          .sort((a, b) => b.start - a.start);
+
+        $("feedSummary").textContent = `Einträge anzeigen (${finished.length})`;
+
+        if (!finished.length) {
+          list.innerHTML = '<div class="empty">Noch keine Stillzeiten erfasst.</div>';
           return;
         }
 
-        /* Fall B: Normales Verhalten in der aktiven Messung. */
-        var session = activeSession();
+        list.innerHTML = finished.slice(0, 100).map(entry => `
+          <div class="feed-row ${entry.side === "left" ? "side-left" : "side-right"}">
+            <div class="feed-info">
+              <div class="feed-title"><span class="side-badge">${entry.side === "left" ? "L" : "R"}</span>${dayLabel(entry.start)} · ${timeOfDay(entry.start)} Uhr</div>
+              <div class="feed-detail">Dauer: ${fmt(entry.end - entry.start)}</div>
+              ${entry.note ? `<div class="feed-detail feed-note">📝 ${escapeHtml(entry.note)}</div>` : ""}
+            </div>
+            ${isCurrentView()
+              ? `<div class="row-buttons">
+                   <button class="note-button" type="button" data-note="${entry.start}">Notiz</button>
+                   <button class="delete-button" type="button" data-delete="${entry.start}">Löschen</button>
+                 </div>`
+              : ""}
+          </div>
+        `).join("");
+
+        list.querySelectorAll("[data-delete]").forEach(button => {
+          button.addEventListener("click", () => {
+            const start = Number(button.dataset.delete);
+            if (!confirm("Diesen Still-Eintrag löschen?")) return;
+            const session = activeSeries();
+            if (!session) return;
+            session.entries = session.entries.filter(e => e.start !== start);
+            scheduleSave();
+            renderFeed(Date.now());
+          });
+        });
+
+        list.querySelectorAll("[data-note]").forEach(button => {
+          button.addEventListener("click", () => {
+            const start = Number(button.dataset.note);
+            const session = activeSeries();
+            const entry = entries(session).find(e => e.start === start);
+            promptNote(entry);
+          });
+        });
+      }
+
+      function renderHistory() {
+        const list = $("historyList");
+        const ordered = [...series].sort((a, b) => b.startedAt - a.startedAt);
+
+        $("historySummary").textContent = `Gespeicherte Reihen anzeigen (${series.length})`;
+
+        if (!ordered.length) {
+          list.innerHTML = '<div class="empty">Noch keine gespeicherten Reihen.</div>';
+          return;
+        }
+
+        list.innerHTML = ordered.map(session => {
+          const isCurrent = session.id === currentId;
+          const isSelected = session.id === selectedId;
+          const label = isCurrent ? "Aktuell" : session.finished ? "Beendet" : "Gespeichert";
+          const totals = { left: 0, right: 0 };
+          for (const e of entries(session)) {
+            if (e.end !== null) totals[e.side] += e.end - e.start;
+          }
+          const split = `L ${fmt(totals.left)} · R ${fmt(totals.right)}`;
+
+          return `
+            <div class="feed-row">
+              <div class="feed-info">
+                <div class="feed-title">${dateTime(session.startedAt)}</div>
+                <div class="feed-detail">${label} · ${entries(session).length} Stillzeiten · ${split}</div>
+              </div>
+              <div class="row-buttons">
+                <button class="history-button" type="button" data-open="${session.id}" ${isSelected ? "disabled" : ""}>
+                  ${isSelected ? "Angezeigt" : "Öffnen"}
+                </button>
+                <button class="delete-button" type="button" data-del-series="${session.id}">Löschen</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        list.querySelectorAll("[data-open]").forEach(button => {
+          button.addEventListener("click", () => {
+            const session = series.find(s => s.id === button.dataset.open);
+            if (!session) return;
+            session.finished = false;
+            currentId = session.id;
+            selectedId = session.id;
+            hideTapDetail();
+            applyViewState(session);
+            scheduleSave();
+            renderFeed(Date.now());
+          });
+        });
+
+        list.querySelectorAll("[data-del-series]").forEach(button => {
+          button.addEventListener("click", () => deleteSeries(button.dataset.delSeries));
+        });
+      }
+
+      function deleteSeries(id) {
+        const session = series.find(s => s.id === id);
         if (!session) return;
 
-        var now = Date.now();
-        var active = findLastMatch(session.segments, function (s) { return s.end === null; });
+        if (!confirm(
+          "Diese Messreihe (Beginn " + dateTime(session.startedAt) + ", " +
+          entries(session).length + " Stillzeiten) endgültig löschen? " +
+          "Dies kann nicht rückgängig gemacht werden."
+        )) return;
 
-        if (!active) {
-          session.finished = false;
-          session.endedAt = null;
-          session.segments.push({ type: "wave", start: now, end: null });
-        } else if (active.type === "wave") {
-          active.end = now;
-          session.segments.push({ type: "pause", start: now, end: null });
-        } else {
-          active.end = now;
-          session.segments.push({ type: "wave", start: now, end: null });
-        }
+        const wasCurrent = id === currentId;
+        series = series.filter(s => s.id !== id);
 
-        viewRight = null;
-        save();
-        render();
-      });
-
-      $("averageWindow").addEventListener("change", render);
-      $("addWater").addEventListener("click", addWater);
-      $("addNote").addEventListener("click", addNote);
-      $("showWater").addEventListener("change", function () { drawGraph(Date.now()); });
-      $("showNotes").addEventListener("change", function () { drawGraph(Date.now()); });
-
-      $("modeElapsed").addEventListener("click", function () { setTimeMode("elapsed"); });
-      $("modeClock").addEventListener("click", function () { setTimeMode("clock"); });
-
-      $("zoomIn").addEventListener("click", function () { zoomBy(1 / 1.5); });
-      $("zoomOut").addEventListener("click", function () { zoomBy(1.5); });
-
-      $("resetView").addEventListener("click", function () {
-        var session = selectedSession();
-        var segments = session ? session.segments : [];
-        if (!segments.length) return;
-
-        var first = segments[0].start;
-        var end = session.finished && session.endedAt ? session.endedAt : Date.now();
-        viewSpan = Math.max(MIN_VIEW, Math.min(MAX_VIEW, end - first));
-        viewRight = null;
-        drawGraph(Date.now());
-      });
-
-      wrap.addEventListener("touchstart", function (event) {
-        if (event.touches.length === 2) {
-          var distance = Math.sqrt(
-            (event.touches[0].clientX - event.touches[1].clientX) * (event.touches[0].clientX - event.touches[1].clientX) +
-            (event.touches[0].clientY - event.touches[1].clientY) * (event.touches[0].clientY - event.touches[1].clientY)
-          );
-          gesture = { type: "pinch", distance: distance, span: viewSpan, center: lastCenter };
-          touchStart = null;
-        } else if (event.touches.length === 1) {
-          gesture = {
-            type: "pan",
-            x: event.touches[0].clientX,
-            right: lastRight,
-            minRight: lastFirst + lastVisibleSpan
-          };
-          touchStart = {
-            x: event.touches[0].clientX,
-            y: event.touches[0].clientY,
-            time: Date.now()
-          };
-        }
-      }, { passive: false });
-
-      wrap.addEventListener("touchmove", function (event) {
-        if (!gesture) return;
-        event.preventDefault();
-
-        if (event.touches.length === 2 && gesture.type === "pinch") {
-          var distance = Math.sqrt(
-            (event.touches[0].clientX - event.touches[1].clientX) * (event.touches[0].clientX - event.touches[1].clientX) +
-            (event.touches[0].clientY - event.touches[1].clientY) * (event.touches[0].clientY - event.touches[1].clientY)
-          );
-          var ratio = gesture.distance / Math.max(1, distance);
-          viewSpan = Math.max(MIN_VIEW, Math.min(MAX_VIEW, gesture.span * ratio));
-
-          if (lastDataEnd) {
-            var target = gesture.center + viewSpan / 2;
-            viewRight = target >= lastDataEnd ? null : target;
-          }
-
-          drawGraph(Date.now());
-        } else if (event.touches.length === 1 && gesture.type === "pan") {
-          var dx = event.touches[0].clientX - gesture.x;
-          var msPerPixel = viewSpan / Math.max(1, canvas.clientWidth);
-          viewRight = Math.max(gesture.minRight, gesture.right - dx * msPerPixel);
-          drawGraph(Date.now());
-        }
-      }, { passive: false });
-
-      wrap.addEventListener("touchend", function (event) {
-        if (gesture && gesture.type === "pan" && touchStart && event.changedTouches.length === 1) {
-          var dx = event.changedTouches[0].clientX - touchStart.x;
-          var dy = event.changedTouches[0].clientY - touchStart.y;
-          var moved = Math.sqrt(dx * dx + dy * dy);
-          var elapsed = Date.now() - touchStart.time;
-
-          if (moved < 14 && elapsed < 600) {
-            handleTap(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
-            event.preventDefault();
+        if (wasCurrent) {
+          if (!series.length) {
+            const fresh = makeSeries();
+            series.push(fresh);
+            currentId = fresh.id;
+          } else {
+            currentId = [...series].sort((a, b) => b.startedAt - a.startedAt)[0].id;
           }
         }
+        if (selectedId === id) selectedId = currentId;
 
-        gesture = null;
-        touchStart = null;
-      }, { passive: false });
+        hideTapDetail();
+        applyViewState(activeSeries());
+        scheduleSave();
+        renderFeed(Date.now());
+      }
 
-      wrap.addEventListener("touchcancel", function () {
-        gesture = null;
-        touchStart = null;
+      /* ============ Zeitraum, Zoom, Navigation ============ */
+
+      document.querySelectorAll(".span-button").forEach(button => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".span-button").forEach(b => b.classList.remove("active"));
+          button.classList.add("active");
+          viewSpanHours = Number(button.dataset.span);
+          zoomSpanHours = null;
+          hideTapDetail();
+          drawTimeline(Date.now());
+          scheduleSave();
+        });
       });
 
-      wrap.addEventListener("click", function (event) {
-        handleTap(event.clientX, event.clientY);
+      function zoomBy(factor) {
+        zoomSpanHours = Math.max(0.25, Math.min(24 * 7, effectiveSpanHours() * factor));
+        syncSpanButtons();
+        hideTapDetail();
+        drawTimeline(Date.now());
+        scheduleSave();
+      }
+
+      $("zoomIn").addEventListener("click", () => zoomBy(1 / 1.5));
+      $("zoomOut").addEventListener("click", () => zoomBy(1.5));
+      $("panBack").addEventListener("click", () => moveView(1));
+      $("panForward").addEventListener("click", () => moveView(-1));
+
+      $("jumpNow").addEventListener("click", () => {
+        viewRight = null;
+        hideTapDetail();
+        drawTimeline(Date.now());
+        scheduleSave();
       });
 
-      $("dialogClose").addEventListener("click", function () {
-        $("detailDialog").close();
-      });
+      /* ============ Messreihen ============ */
 
-      $("detailDialog").addEventListener("click", function (event) {
-        if (event.target === $("detailDialog")) $("detailDialog").close();
-      });
+      $("finishSeries").addEventListener("click", () => {
+        const session = activeSeries();
+        if (!session || !isCurrentView()) return;
+        if (!confirm("Die aktuelle Messreihe beenden? Sie bleibt in der Historie gespeichert.")) return;
 
-      var helpDialog = $("helpDialog");
-      $("helpButton").addEventListener("click", function () { helpDialog.showModal(); });
-      $("helpClose").addEventListener("click", function () { helpDialog.close(); });
-      helpDialog.addEventListener("click", function (event) {
-        if (event.target === helpDialog) helpDialog.close();
-      });
-
-      $("finishSession").addEventListener("click", function () {
-        var session = activeSession();
-        if (!session || selectedId !== currentId || session.finished) return;
-
-        if (!confirm("Die aktuelle Messung beenden? Sie bleibt in der Historie gespeichert. Per „Welle starten“ kann sie später fortgesetzt werden.")) return;
-
-        var now = Date.now();
-        closeOpenSegment(session, now);
+        const now = Date.now();
+        for (const e of session.entries) {
+          if (e.end === null) e.end = now;
+        }
         session.finished = true;
         session.endedAt = now;
-        save();
-        render();
+        scheduleSave();
+        renderFeed(now);
       });
 
-      $("newSession").addEventListener("click", function () {
-        if (!confirm("Eine neue Messung starten? Die bisherige Messung wird gespeichert und bleibt in der Historie erhalten.")) {
-          return;
-        }
+      $("newSeries").addEventListener("click", () => {
+        if (!confirm("Eine neue Messreihe starten? Die bisherige Messreihe wird gespeichert und bleibt in der Historie erhalten.")) return;
 
-        var oldSession = activeSession();
+        const oldSession = activeSeries();
         if (oldSession && !oldSession.finished) {
-          var now = Date.now();
-          closeOpenSegment(oldSession, now);
+          const now = Date.now();
+          for (const e of oldSession.entries) {
+            if (e.end === null) e.end = now;
+          }
           oldSession.finished = true;
           oldSession.endedAt = now;
         }
 
-        var fresh = makeSession();
-        sessions.push(fresh);
+        const fresh = makeSeries();
+        series.push(fresh);
         currentId = fresh.id;
         selectedId = fresh.id;
-        viewRight = null;
-        viewSpan = 20 * 60 * 1000;
-        save();
-        render();
-        window.scrollTo(0, 0);
+        hideTapDetail();
+        applyViewState(fresh);
+        scheduleSave();
+        renderFeed(Date.now());
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
 
-      $("returnCurrent").addEventListener("click", function () {
-        selectedId = currentId;
-        viewRight = null;
-        render();
+      /* ============ Export / Import ============ */
+
+      $("exportData").addEventListener("click", () => {
+        try {
+          const payload = {
+            app: "still-tracker",
+            version: 3,
+            exportedAt: new Date().toISOString(),
+            currentSide, autoSwitch, theme,
+            series, currentId
+          };
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "still-tracker-backup-" +
+            new Date().toISOString().slice(0, 10) + ".json";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        } catch (error) {
+          alert("Der Export ist fehlgeschlagen: " + error.message);
+        }
       });
 
-      /* v10: Sofortspeichern beim Verbergen/Schließen der Seite/App */
-      document.addEventListener("visibilitychange", function () {
-        if (document.visibilityState === "hidden") save();
+      $("importData").addEventListener("click", () => $("importFile").click());
+
+      $("importFile").addEventListener("change", event => {
+        const file = event.target.files && event.target.files[0];
+        event.target.value = "";
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            if (!data || data.app !== "still-tracker" || !Array.isArray(data.series)) {
+              alert("Diese Datei ist keine gültige Still-Tracker-Sicherung.");
+              return;
+            }
+            if (!confirm(
+              "Die Sicherung (Stand " + (data.exportedAt || "unbekannt") + ") importieren? " +
+              "Die aktuellen Daten in diesem Browser werden dabei ersetzt."
+            )) return;
+
+            if (data.currentSide === "left" || data.currentSide === "right") {
+              currentSide = data.currentSide;
+            }
+            autoSwitch = data.autoSwitch === "off" ? "off" : "on";
+            theme = { mode: "manual", dark: false, start: "20:00", end: "07:00" };
+            loadTheme(data.theme);
+
+            const norm = normalizeSessions(data.series, data.currentId);
+            series = norm.sessions;
+            currentId = norm.current;
+
+            if (!activeSeries()) {
+              const fresh = makeSeries();
+              series.push(fresh);
+              currentId = fresh.id;
+            }
+            selectedId = currentId;
+
+            $("autoSwitch").value = autoSwitch;
+            $("themeMode").value = theme.mode;
+            $("themeStart").value = theme.start;
+            $("themeEnd").value = theme.end;
+            $("themeWindowRow").hidden = theme.mode !== "window";
+            applyTheme(true);
+
+            hideTapDetail();
+            applyViewState(activeSeries());
+            scheduleSave();
+            renderFeed(Date.now());
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            alert("Sicherung erfolgreich importiert.");
+          } catch (error) {
+            alert("Der Import ist fehlgeschlagen: " + error.message);
+          }
+        };
+        reader.readAsText(file);
       });
-      window.addEventListener("pagehide", save);
-      window.addEventListener("beforeunload", save);
 
-      window.addEventListener("resize", resizeCanvas);
+      /* ============ Hilfe ============ */
 
-      load();
-      applyTheme(false);          // v10-Nachtrag: gespeichertes Theme beim Start anwenden
-      resizeCanvas();
-      render();
+      $("helpButton").addEventListener("click", () => $("helpDialog").showModal());
+      $("helpClose").addEventListener("click", () => $("helpDialog").close());
+      $("helpDialog").addEventListener("click", event => {
+        if (event.target === $("helpDialog")) $("helpDialog").close();
+      });
 
-      window.setInterval(render, 500);
+      /* ============ Sofortspeichern beim Schließen/Verbergen ============ */
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") persistState();
+      });
+      window.addEventListener("pagehide", persistState);
+      window.addEventListener("beforeunload", persistState);
+
+      /* ============ Start ============ */
+
+      function renderFeed(now) {
+        updateControls(now);
+        renderLastFeed(now);
+        drawTimeline(now);
+        renderStats(now);
+        renderFeedList();
+        renderHistory();
+      }
+
+      loadAll();
+      resizeGraph();
+      renderFeed(Date.now());
+
+      window.addEventListener("resize", () => {
+        resizeGraph();
+        if (openDetail) hideTapDetail();
+      });
+
+      window.setInterval(() => {
+        renderFeed(Date.now());
+        // v21: Zeitfenster- und OS-Modus laufend prüfen
+        if (theme.mode !== "manual") {
+          const dark = document.documentElement.getAttribute("data-theme") === "dark";
+          const wantDark = themeShouldBeDark(new Date());
+          if (dark !== wantDark) applyTheme(true);
+        }
+      }, 500);
     })();
   </script>
 </body>
