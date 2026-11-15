@@ -244,6 +244,7 @@
       font-size: .86rem;
       font-weight: 650;
       text-align: center;
+      cursor: pointer;
     }
 
     .reminder-banner.rem-fired {
@@ -861,6 +862,9 @@
       let lastFiredAt = 0;        // letzter Auslösung-Zeitpunkt (Anti-Doppelklingeln)
       let lastFiredSlot = "";     // Kennung des zuletzt ausgelösten Slots
       let customAudio = null;     // Audio-Objekt für eigenen Ton
+      let alarmRinging = false;   // v22.2: Alarm klingelt (Schleife) bis quittiert
+      let alarmLoopTimer = null;  // Wiederholungs-Intervall des Alarms
+      let testTimer = null;       // Läuft gerade der Ton-Test?
 
       function showSaveWarning(detail) {
         const box = $("saveWarning");
@@ -1126,7 +1130,6 @@
         if (typeof raw.frameStart === "string" && /^\d{2}:\d{2}$/.test(raw.frameStart)) reminder.frameStart = raw.frameStart;
         if (typeof raw.frameEnd === "string" && /^\d{2}:\d{2}$/.test(raw.frameEnd)) reminder.frameEnd = raw.frameEnd;
         reminder.manualUntil = Number.isFinite(raw.manualUntil) ? raw.manualUntil : 0;
-        if (!reminder.customData && reminder.tone === "custom") reminder.tone = "default";
       }
 
       function loadAll() {
@@ -1259,6 +1262,23 @@
         }
       }
 
+      function startAlarm() {
+        ensureAudioCtx();
+        playReminderSound();
+        alarmRinging = true;
+        if (alarmLoopTimer) clearInterval(alarmLoopTimer);
+        // Wiegenlied dauert ca. 8–9 s → alle 11 s erneut erklingen lassen
+        alarmLoopTimer = setInterval(() => {
+          if (alarmRinging) playReminderSound();
+        }, 11000);
+      }
+
+      function stopAlarm() {
+        alarmRinging = false;
+        if (alarmLoopTimer) { clearInterval(alarmLoopTimer); alarmLoopTimer = null; }
+        if (customAudio) { customAudio.pause(); customAudio = null; }
+      }
+      
       function playReminderSound() {
         const vol = reminder.volume;
         if (reminder.tone === "custom" && reminder.customData) {
@@ -1368,7 +1388,7 @@
             lastFiredSlot = "manual-" + reminder.manualUntil;
             lastFiredAt = now;
             reminder.manualUntil = 0;
-            playReminderSound();
+            startAlarm();
             scheduleSave();
           }
           return;
@@ -1386,7 +1406,7 @@
               if (lastFiredSlot !== key) {
                 lastFiredSlot = key;
                 lastFiredAt = now;
-                playReminderSound();
+                startAlarm();
               }
             }
           }
@@ -1399,7 +1419,7 @@
           if (next && next.at <= now && next.key !== lastFiredSlot && inRemFrame(new Date(now))) {
             lastFiredSlot = next.key;
             lastFiredAt = now;
-            playReminderSound();
+            startAlarm();
           }
         }
       }
@@ -1515,13 +1535,11 @@
 
       $("remTone").addEventListener("change", () => {
         reminder.tone = $("remTone").value;
-        if (reminder.tone === "custom" && !reminder.customData) {
-          reminder.tone = "default";
-          $("remTone").value = "default";
-          alert("Bitte zuerst einen eigenen Ton auswählen.");
-        }
         syncReminderUI();
         scheduleSave();
+        if (reminder.tone === "custom" && !reminder.customData) {
+          alert("Noch kein eigener Ton vorhanden – bitte zunächst über „Ton auswählen …“ eine Audiodatei laden.");
+        }
       });
 
       $("remPickTone").addEventListener("click", () => $("remToneFile").click());
@@ -1564,8 +1582,20 @@
       $("remVolume").addEventListener("change", () => scheduleSave());
 
       $("remTest").addEventListener("click", () => {
+        if (testTimer) {
+          // Test läuft bereits → erneut antippen beendet ihn
+          clearTimeout(testTimer);
+          testTimer = null;
+          if (customAudio) { customAudio.pause(); customAudio = null; }
+          return;
+        }
         ensureAudioCtx();           // Mobile: Wiedergabe braucht Nutzerinteraktion
         playReminderSound();
+        // Nach spätestens 11 s (Wiegenlied-Ende) automatisch aufräumen
+        testTimer = setTimeout(() => {
+          testTimer = null;
+          if (customAudio) { customAudio.pause(); customAudio = null; }
+        }, 11000);
       });
 
       /* --- Erinnerungs-Banner im Hauptbereich --- */
@@ -1573,6 +1603,13 @@
       function renderReminderBanner(now) {
         const box = $("reminderBanner");
         if (!reminder.enabled) { box.hidden = true; return; }
+
+        if (alarmRinging) {
+          box.hidden = false;
+          box.classList.add("rem-fired");
+          box.textContent = "🔔 Erinnerung! Antippen zum Quittieren";
+          return;
+        }
 
         const next = computeNextFire(new Date(now));
 
@@ -1601,10 +1638,14 @@
           box.textContent = "🔔 Manueller Countdown: " + fmtDurationLong(restMs);
         }
       }
+      $("reminderBanner").addEventListener("click", () => {
+        if (alarmRinging) stopAlarm();
+      });
 
       /* ============ Kernlogik ============ */
 
       function setSide(side) {
+        if (alarmRinging) stopAlarm();        
         const session = activeSeries();
         if (session && isCurrentView()) {
           const active = activeFeed();
@@ -1623,6 +1664,7 @@
       }
 
       function toggleFeed() {
+        if (alarmRinging) stopAlarm();
         const session = activeSeries();
         if (!session || !isCurrentView()) return;
 
