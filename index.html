@@ -569,13 +569,15 @@
 
     <h2>Einstellungen</h2>
     <section class="card">
-      <div class="setting-row">
-        <p>Nach dem Stillen die Seite …</p>
-        <select id="autoSwitch">
-          <option value="on">automatisch wechseln</option>
-          <option value="off">nicht ändern</option>
-        </select>
-      </div>
+      <details id="settingsDetails" open>
+        <summary>Einstellungen ein-/ausklappen</summary>
+        <div class="setting-row">
+          <p>Nach dem Stillen die Seite …</p>
+          <select id="autoSwitch">
+            <option value="on">automatisch wechseln</option>
+            <option value="off">nicht ändern</option>
+          </select>
+        </div>
       <div class="setting-row">
         <p>Farbschema</p>
         <select id="themeMode">
@@ -598,7 +600,8 @@
         </div>
       </div>
 
-      <div class="settings-block" id="remSettings" hidden>
+      <details class="settings-block" id="remSettings" hidden>
+        <summary>Erinnerung ein-/ausklappen</summary>
         <div class="setting-row">
           <p>Modus</p>
           <select id="remMode">
@@ -620,7 +623,7 @@
         <div id="remIntervalRows" hidden>
           <div class="setting-row">
             <p>Abstand (Minuten)</p>
-            <input type="number" id="remIntervalMin" min="5" max="720" value="180">
+            <input type="number" id="remIntervalMin" min="1" max="720" value="180">
           </div>
           <div class="setting-row">
             <label for="remFrameOn"><input type="checkbox" id="remFrameOn"> nur in Zeitrahmen erinnern</label>
@@ -676,6 +679,8 @@
           </p>
         </div>
       </div>
+      </details>
+      </details>
     </section>
 
     <h2>Stillzeiten</h2>
@@ -739,6 +744,11 @@
       <ul>
         <li>Tracker in Safari öffnen</li>
         <li>Teilen-Symbol → <strong>„Zum Home-Bildschirm"</strong></li>
+      </ul>
+            <h4>Android (Firefox)</h4>
+      <ul>
+        <li>Tracker in Firefox öffnen</li>
+        <li>Menü (⋮) → <strong>„Zum Startbildschirm hinzufügen"</strong></li>
       </ul>
       <p>Die so gestartete App ist eigenständig im Vollbild und klingelt zuverlässig,
       solange der Bildschirm an ist. Bei gesperrtem Bildschirm oder komplett
@@ -1106,7 +1116,7 @@
         if (Array.isArray(raw.times)) {
           reminder.times = raw.times.filter(t => typeof t === "string" && /^\d{2}:\d{2}$/.test(t)).slice(0, 24);
         }
-        if (Number.isFinite(raw.intervalMin)) reminder.intervalMin = Math.min(720, Math.max(5, Math.round(raw.intervalMin)));
+        if (Number.isFinite(raw.intervalMin)) reminder.intervalMin = Math.min(720, Math.max(1, Math.round(raw.intervalMin)));
         if (Number.isFinite(raw.manualMin)) reminder.manualMin = Math.min(720, Math.max(1, Math.round(raw.manualMin)));
         if (Number.isFinite(raw.volume)) reminder.volume = Math.min(1, Math.max(0, raw.volume));
         if (raw.tone === "default" || raw.tone === "custom") reminder.tone = raw.tone;
@@ -1468,7 +1478,7 @@
       $("remIntervalMin").addEventListener("change", () => {
         let v = Math.round(Number($("remIntervalMin").value));
         if (!Number.isFinite(v)) v = 180;
-        reminder.intervalMin = Math.min(720, Math.max(5, v));
+        reminder.intervalMin = Math.min(720, Math.max(1, v));
         $("remIntervalMin").value = reminder.intervalMin;
         reminder.manualMin = reminder.intervalMin;   // Default des manuellen Countdowns
         $("remManualMin").value = reminder.manualMin;
