@@ -503,6 +503,13 @@
     .help-body ul { margin: 4px 0 10px; padding-left: 20px; }
     .help-body li { margin: 3px 0; }
 
+    #dimShield {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: transparent;
+      cursor: pointer;
+    }    
     @media (max-width: 360px) {
       main { padding-right: 12px; padding-left: 12px; }
       .card { padding: 16px 13px; }
@@ -514,6 +521,7 @@
 <body>
   <div id="saveWarning" role="alert" style="display:none;margin:0;padding:12px 16px;background:#ffe1db;color:#8b1f0e;font-size:.85rem;line-height:1.5;border-bottom:2px solid #d95f49;"></div>
 
+  <div id="dimShield" hidden></div>
   <main id="wakeMain">
     <header>
       <h1>Still-Tracker</h1>
@@ -1318,6 +1326,7 @@
       /* --- Alarm-Schleife: klingelt bis zum Quittieren --- */
 
       function startAlarm() {
+        undim();
         ensureAudioCtx();
         playReminderSound();
         alarmRinging = true;
@@ -1414,34 +1423,35 @@
         return wakeLock !== null || (wakeWanted(new Date()) && wakeSupported() && !wakeDenied);
       }
 
-      function undim(reason) {
+      function undim() {
         lastInteraction = Date.now();
         document.body.classList.remove("screen-dim");
+        dimGuardOff();
       }
 
       // v23.1: Erste Berührung im abgedunkelten Zustand hellt NUR auf –
       // sie löst noch keine Taste/Aktion aus (Capture-Phase schluckt den Event).
-      function dimGuard(event) {
-        if (!document.body.classList.contains("screen-dim")) return;
+      // v23.2: Im abgedunkelten Zustand fängt ein unsichtbares Overlay alle
+      // Berührungen ab (Firefox Android zeigt sonst Hover-/Aktiv-Effekte).
+      const shield = $("dimShield");
+
+      function dimGuardOn() { shield.hidden = false; }
+      function dimGuardOff() { shield.hidden = true; }
+
+      shield.addEventListener("pointerdown", event => {
         event.stopPropagation();
         event.preventDefault();
         undim();
-      }
-      ["pointerdown", "touchstart", "click", "keydown"].forEach(evt => {
-        document.addEventListener(evt, dimGuard, { capture: true });
-      });
-
-      // Normalzustand: Aktivität registrieren (nur Aufhellen, keine Abfangjagd)
-      ["pointerdown", "pointerup", "keydown", "wheel"].forEach(evt => {
-        document.addEventListener(evt, () => undim(), { passive: true });
       });
 
       function dimCheck(now) {
         if (!wakeActiveDimming() || document.visibilityState !== "visible") return;
-        if (now - lastInteraction >= DIM_DELAY_MS) {
+        if (now - lastInteraction >= DIM_DELAY_MS && !alarmRinging) {
           document.body.classList.add("screen-dim");
+          dimGuardOn();
         } else {
           document.body.classList.remove("screen-dim");
+          dimGuardOff();
         }
       }
 
@@ -1452,6 +1462,7 @@
           wasHiddenWhileArmed = wakeWanted(new Date());
           releaseWakeLock();
           document.body.classList.remove("screen-dim");
+          dimGuardOff();
         } else {
           lastInteraction = Date.now();
           if (wasHiddenWhileArmed && reminder.enabled) {
