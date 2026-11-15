@@ -504,6 +504,9 @@
     .help-body li { margin: 3px 0; }
 
     #dimShield {
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
       position: fixed;
       inset: 0;
       z-index: 9999;
@@ -1433,16 +1436,28 @@
       // sie löst noch keine Taste/Aktion aus (Capture-Phase schluckt den Event).
       // v23.2: Im abgedunkelten Zustand fängt ein unsichtbares Overlay alle
       // Berührungen ab (Firefox Android zeigt sonst Hover-/Aktiv-Effekte).
+      // v23.3: Abgedunkelter Zustand – erste Berührung wird IMMER abgefangen
+      // (Capture-Phase am window, vor allen Button-Listenern; Shield als Barriere)
       const shield = $("dimShield");
 
-      function dimGuardOn() { shield.hidden = false; }
-      function dimGuardOff() { shield.hidden = true; }
+      function isDimmed() {
+        return document.body.classList.contains("screen-dim");
+      }
+      function dimGuardOn() { if (shield) shield.hidden = false; }
+      function dimGuardOff() { if (shield) shield.hidden = true; }
 
-      shield.addEventListener("pointerdown", event => {
+      function dimIntercept(event) {
+        if (!isDimmed()) return;
         event.stopPropagation();
         event.preventDefault();
         undim();
-      });
+      }
+
+      // Capture-Phase: läuft VOR allen Listenern der App-Elemente
+      ["pointerdown", "pointermove", "touchstart", "click", "keydown"]
+        .forEach(evt => window.addEventListener(evt, dimIntercept, { capture: true }));
+
+      shield.addEventListener("pointerdown", dimIntercept);
 
       function dimCheck(now) {
         if (!wakeActiveDimming() || document.visibilityState !== "visible") return;
