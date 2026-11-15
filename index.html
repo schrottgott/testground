@@ -887,6 +887,8 @@
       let lastFiredAt = 0;        // letzter Auslösung-Zeitpunkt (Anti-Doppelklingeln)
       let lastFiredSlot = "";     // Kennung des zuletzt ausgelösten Slots
       let customAudio = null;     // Audio-Objekt für eigenen Ton
+      let ringNodes = [];    // v23.1: gerade klingende Oszillatoren
+      let ringMaster = null; // v23.1: Sammel-Gain der aktuellen Wiedergabe
       let alarmRinging = false;   // Alarm klingelt (Schleife) bis quittiert
       let alarmLoopTimer = null;  // Wiederholungs-Intervall des Alarms
       let testTimer = null;       // Läuft gerade der Ton-Test?
@@ -1260,6 +1262,11 @@
       function playLullaby(volume) {
         const ctxA = ensureAudioCtx();
         if (!ctxA) return;
+        if (ringMaster) { try { ringMaster.disconnect(); } catch { /* egal */ } }
+        ringNodes = [];
+        ringMaster = ctxA.createGain();
+        ringMaster.gain.value = volume;
+        ringMaster.connect(ctxA.destination);
         const beat = 0.42;             // Dauer eines Schlags (Sekunden) – ruhig
         const t0 = ctxA.currentTime + 0.05;
         for (const [note, start, len] of LULLABY) {
@@ -1276,20 +1283,18 @@
 
           const gain = ctxA.createGain();
           const gainOver = ctxA.createGain();
-          const master = ctxA.createGain();
-          master.gain.value = volume;
 
           gain.gain.setValueAtTime(0.0001, t);
           gain.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
           gain.gain.exponentialRampToValueAtTime(0.0001, t + dur * 1.6);
           gainOver.gain.value = 0.06;
 
-          osc.connect(gain).connect(master);
-          overtone.connect(gainOver).connect(master);
-          master.connect(ctxA.destination);
+          osc.connect(gain).connect(ringMaster);
+          overtone.connect(gainOver).connect(ringMaster);
 
           osc.start(t); osc.stop(t + dur * 1.7);
           overtone.start(t); overtone.stop(t + dur * 1.7);
+          ringNodes.push(osc, overtone);
         }
       }
 
@@ -1323,10 +1328,27 @@
         }, 11000);
       }
 
+      function stopAllSound() {
+        for (const node of ringNodes) {
+          try { node.stop(); } catch { /* bereits gestoppt */ }
+        }
+        ringNodes = [];
+        if (ringMaster) {
+          try {
+            ringMaster.gain.cancelScheduledValues(audioCtx.currentTime);
+            ringMaster.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            ringMaster.disconnect();
+          } catch { /* egal */ }
+          ringMaster = null;
+        }
+        if (customAudio) { customAudio.pause(); customAudio = null; }
+        try { if (navigator.vibrate) navigator.vibrate(0); } catch { /* egal */ }
+      }
+
       function stopAlarm() {
         alarmRinging = false;
         if (alarmLoopTimer) { clearInterval(alarmLoopTimer); alarmLoopTimer = null; }
-        if (customAudio) { customAudio.pause(); customAudio = null; }
+        stopAllSound();
       }
 
       /* --- v23: Wach-Modus (Screen Wake Lock) + Abdunkeln --- */
@@ -1397,7 +1419,20 @@
         document.body.classList.remove("screen-dim");
       }
 
-      ["pointerdown", "pointerup", "keydown", "wheel", "touchstart"].forEach(evt => {
+      // v23.1: Erste Berührung im abgedunkelten Zustand hellt NUR auf –
+      // sie löst noch keine Taste/Aktion aus (Capture-Phase schluckt den Event).
+      function dimGuard(event) {
+        if (!document.body.classList.contains("screen-dim")) return;
+        event.stopPropagation();
+        event.preventDefault();
+        undim();
+      }
+      ["pointerdown", "touchstart", "click", "keydown"].forEach(evt => {
+        document.addEventListener(evt, dimGuard, { capture: true });
+      });
+
+      // Normalzustand: Aktivität registrieren (nur Aufhellen, keine Abfangjagd)
+      ["pointerdown", "pointerup", "keydown", "wheel"].forEach(evt => {
         document.addEventListener(evt, () => undim(), { passive: true });
       });
 
@@ -1748,7 +1783,7 @@
           // Test läuft bereits → erneut antippen beendet ihn
           clearTimeout(testTimer);
           testTimer = null;
-          if (customAudio) { customAudio.pause(); customAudio = null; }
+          stopAllSound(); 
           $("remTest").textContent = "Test ▶";
           return;
         }
@@ -1759,7 +1794,7 @@
         // Nach spätestens 11 s (Wiegenlied-Ende) automatisch aufräumen
         testTimer = setTimeout(() => {
           testTimer = null;
-          if (customAudio) { customAudio.pause(); customAudio = null; }
+          istopAllSound(); 
           $("remTest").textContent = "Test ▶";
         }, 11000);
       });
