@@ -7,18 +7,18 @@
   <title>Still-Tracker</title>
   <!--
     ============================================================
-    Still-Tracker · Version 23 (Wach-Modus)
-    Datum: 15.11.2026
-    Neu in v23 (aufbauend auf v22):
-    - Klingelton läuft als Alarm-Schleife bis zum Quittieren
-      (neue Stillzeit, Seitenwechsel oder Antippen des Hinweises)
-    - Wach-Modus: Bildschirm bleibt an, solange die Erinnerung
-      aktiv ist (nur im Zeitrahmen, falls gesetzt); die Seite
-      dunkelt nach 20 s Untätigkeit stark ab, Berührung hellt
-      sofort wieder auf. Manuelles Sperren bleibt möglich.
-    - Test-Knopf: erneutes Antippen stoppt den Test
-    - Eigener Klingelton: Upload jetzt auch vorab möglich
-    - Einstellungen & Erinnerungsblock einklappbar
+    Still-Tracker · Version 24 (Wach-Modus überarbeitet)
+    Datum: 16.11.2026
+    Neu in v24 (aufbauend auf v23):
+    - FIX: Berührung im abgedunkelten Zustand löst garantiert
+      keine Taste mehr aus – auch der Nach-Klick derselben
+      Geste wird verworfen (Grund für das alte Problem)
+    - Wischen/Scrollen hellt die Seite auf und zählt als Aktivität
+    - Manueller Countdown: Minutenfeld + Start-Button oben im
+      Hauptbereich (neben dem Erinnerungs-Banner)
+    - Vollbild beim Start von Stillzeit/Countdown im Wach-Modus
+      (Android Chrome/Firefox; iOS Safari unterstützt das nicht)
+    - FIX: Tippfehler im Ton-Test-Autostopp behoben
     Speicherschlüssel unverändert: still-tracker-data-v3
     ============================================================
   -->
@@ -227,7 +227,6 @@
 
     .last-feed.side-left { background: var(--left); color: white; }
     .last-feed.side-right { background: var(--right-strong); color: var(--right-ink); }
-
     .last-feed strong { font-size: .98rem; display: block; margin-bottom: 2px; }
     .last-feed .feed-note {
       margin-top: 6px;
@@ -262,6 +261,31 @@
       to { filter: brightness(1.25); }
     }
 
+    /* v24: Manuelle-Countdown-Leiste oben im Hauptbereich */
+    #remManualBar {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--rem-bg);
+      border: 1px solid var(--rem-border);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #remManualBar input[type="number"] {
+      min-height: 42px;
+      width: 92px;
+      padding: 4px 10px;
+      border: 1px solid var(--rem-border);
+      border-radius: 11px;
+      background: var(--btn-bg);
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #remManualBar[hidden] { display: none !important; }
+    
     .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .stat { padding: 11px 6px; border-radius: 13px; }
     .stat.stat-left { background: var(--left-bg); border: 1px solid var(--left-border); }
@@ -444,7 +468,8 @@
     input[type="range"] { accent-color: var(--accent); width: 140px; }
 
     #themeWindowRow[hidden], #remFixedRows[hidden], #remIntervalRows[hidden],
-    #remManualRows[hidden], #remFrameRows[hidden], #remCustomRows[hidden] {
+    #remManualRows[hidden], #remFrameRows[hidden], #remCustomRows[hidden],
+    #remManualBar[hidden] {
       display: none !important;
     }
 
@@ -512,7 +537,8 @@
       z-index: 9999;
       background: transparent;
       cursor: pointer;
-    }    
+    }
+
     @media (max-width: 360px) {
       main { padding-right: 12px; padding-left: 12px; }
       .card { padding: 16px 13px; }
@@ -548,6 +574,12 @@
 
       <button class="big-toggle" id="bigToggle" type="button">Stillzeit starten</button>
       <div class="last-feed" id="lastFeed" hidden title="Antippen: Notiz zur letzten Stillzeit"></div>
+
+      <div id="remManualBar" hidden>
+        <input type="number" id="remManualMinTop" min="1" max="720" value="180">
+        <button class="small-action" id="remManualStartTop" type="button" style="flex:1">Countdown starten</button>
+      </div>
+
       <div class="reminder-banner" id="reminderBanner" hidden></div>
       <p class="hint" id="feedHint"></p>
     </section>
@@ -579,7 +611,6 @@
       </div>
       <p class="graph-status" id="graphStatus"></p>
     </section>
-
     <h2>Statistik</h2>
     <section class="card">
       <div class="stats" id="statsBox"></div>
@@ -1432,12 +1463,10 @@
         dimGuardOff();
       }
 
-      // v23.1: Erste Berührung im abgedunkelten Zustand hellt NUR auf –
-      // sie löst noch keine Taste/Aktion aus (Capture-Phase schluckt den Event).
-      // v23.2: Im abgedunkelten Zustand fängt ein unsichtbares Overlay alle
-      // Berührungen ab (Firefox Android zeigt sonst Hover-/Aktiv-Effekte).
-      // v23.3: Abgedunkelter Zustand – erste Berührung wird IMMER abgefangen
-      // (Capture-Phase am window, vor allen Button-Listenern; Shield als Barriere)
+      // v24: Abgedunkelter Zustand – erste Berührung hellt NUR auf.
+      // Entscheidend: Der "click", der am Ende derselben Touch-Geste ankommt,
+      // muss ebenfalls geschluckt werden (bis dahin ist die Seite schon
+      // wieder hell) – genau das war der Grund für die aktivierten Buttons.
       const shield = $("dimShield");
 
       function isDimmed() {
@@ -1446,19 +1475,42 @@
       function dimGuardOn() { if (shield) shield.hidden = false; }
       function dimGuardOff() { if (shield) shield.hidden = true; }
 
+      let wokeFromDimAt = 0;   // Zeitpunkt des Aufhellens aus dem Dunkelzustand
+
       function dimIntercept(event) {
-        if (!isDimmed()) return;
-        event.stopPropagation();
-        event.preventDefault();
-        undim();
+        if (isDimmed()) {
+          wokeFromDimAt = Date.now();
+          event.preventDefault();
+          event.stopPropagation();
+          undim();
+          return;
+        }
+        // Rest-Klicks einer Geste, die im Dunkelzustand begann, verwerfen
+        if (event.type === "click" && Date.now() - wokeFromDimAt < 500) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
       }
 
       // Capture-Phase: läuft VOR allen Listenern der App-Elemente
       ["pointerdown", "pointermove", "touchstart", "click", "keydown"]
         .forEach(evt => window.addEventListener(evt, dimIntercept, { capture: true }));
 
+      // v24: Wischen/Scrollen zählt als Aktivität und hält die Seite hell
+      ["touchmove", "wheel", "scroll"].forEach(evt =>
+        window.addEventListener(evt, () => {
+          if (!isDimmed()) lastInteraction = Date.now();
+        }, { capture: true, passive: true }));
+
       shield.addEventListener("pointerdown", dimIntercept);
 
+      // v24: Vollbild beim Scharfstellen des Wach-Modus
+      // (Android Chrome/Firefox; iOS Safari unterstützt das nicht)
+      function enterWakeFullscreen() {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      }
       function dimCheck(now) {
         if (!wakeActiveDimming() || document.visibilityState !== "visible") return;
         if (now - lastInteraction >= DIM_DELAY_MS && !alarmRinging) {
@@ -1641,6 +1693,8 @@
           : "noch kein eigener Ton geladen";
         $("remVolume").value = Math.round(reminder.volume * 100);
         $("remWakeOn").checked = reminder.wakeOn;
+        $("remManualBar").hidden = !(reminder.enabled && reminder.mode === "manual");
+        $("remManualMinTop").value = reminder.manualMin;
         updateWakeLock();
         renderRemTimes();
       }
@@ -1728,8 +1782,15 @@
         updateWakeLock();
         scheduleSave();
       });
-
+      $("remManualStartTop").addEventListener("click", () => {
+        $("remManualMin").value = $("remManualMinTop").value;
+        $("remManualStart").click();
+      });
+      $("remManualMinTop").addEventListener("change", () => {
+        $("remManualMin").value = $("remManualMinTop").value;
+      });
       $("remManualStart").addEventListener("click", () => {
+        if (wakeActiveDimming()) enterWakeFullscreen();
         let v = Math.round(Number($("remManualMin").value));
         if (!Number.isFinite(v)) v = reminder.manualMin;
         v = Math.min(720, Math.max(1, v));
@@ -1820,7 +1881,7 @@
         // Nach spätestens 11 s (Wiegenlied-Ende) automatisch aufräumen
         testTimer = setTimeout(() => {
           testTimer = null;
-          istopAllSound(); 
+          stopAllSound(); 
           $("remTest").textContent = "Test ▶";
         }, 11000);
       });
@@ -1897,6 +1958,7 @@
       }
 
       function toggleFeed() {
+        if (wakeActiveDimming()) enterWakeFullscreen();
         if (alarmRinging) stopAlarm();
         undim();
 
