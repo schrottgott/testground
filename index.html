@@ -4,521 +4,338 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="theme-color" content="#f6eee7" id="metaThemeColor">
-  <title>Still-Tracker</title>
+  <title>Wellen-Tracker</title>
   <!--
     ============================================================
-    Still-Tracker · Version 24 (Wach-Modus überarbeitet)
-    Datum: 16.11.2026
-    Neu in v24 (aufbauend auf v23):
-    - FIX: Berührung im abgedunkelten Zustand löst garantiert
-      keine Taste mehr aus – auch der Nach-Klick derselben
-      Geste wird verworfen (Grund für das alte Problem)
-    - Wischen/Scrollen hellt die Seite auf und zählt als Aktivität
-    - Manueller Countdown: Minutenfeld + Start-Button oben im
-      Hauptbereich (neben dem Erinnerungs-Banner)
-    - Vollbild beim Start von Stillzeit/Countdown im Wach-Modus
-      (Android Chrome/Firefox; iOS Safari unterstützt das nicht)
-    - FIX: Tippfehler im Ton-Test-Autostopp behoben
-    Speicherschlüssel unverändert: still-tracker-data-v3
+    Wellen-Tracker · Version 11
+    Datum: 25.11.2026
+    Entwickelt von: Lumo (Proton) im Auftrag von SchrottGott
+    Neu in v11 (aufbauend auf v10 mit Dark Mode):
+    - Sicherung: Export + Import aller Daten als JSON-Datei
+    - Zeitstrahl im Modus "Seit Start" umdrehbar (später links, Anfang rechts)
+    - Wellendaten-Liste mit Datum, Dauer, Pause danach und Abstand
+    - Messungshistorie mit Datum, Wellenzahl und Gesamtdauer
+    - Mehrere benutzerdefinierte Timer mit Stichwort
     ============================================================
   -->
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6eee7;
-      --card: #fffaf6;
-      --ink: #342a27;
-      --muted: #796b65;
-      --line: #eaded5;
-      --left: #bd6553;
-      --left-bg: #f9ede9;
-      --left-border: #e8cbc3;
-      --right: #d9b989;
-      --right-strong: #cfa75f;
-      --right-ink: #5f4c22;
-      --right-bg: #faf3e7;
-      --right-border: #e8dcc4;
-      --accent: #9d7650;
-      --surface: #fffdfb;
-      --soft: #f7eee7;
-      --btn-bg: white;
-      --danger-border: #d8b8ae;
-      --danger-bg: #fff5f2;
-      --danger-ink: #8b3e31;
-      --danger-running: #8b3e31;
-      --backdrop: #342a2788;
-      --shadow-card: #4a30200a;
-      --shadow-pop: #4a302033;
-      --rem-bg: #eef3f8;
-      --rem-border: #cfdcec;
-      --rem-ink: #46647f;
+      --bg: #f6eee7; --card: #fffaf6; --ink: #342a27; --muted: #796b65;
+      --wave: #bd6553; --pause: #d9b989; --line: #eaded5; --button: #9d7650;
+      --water: #7d9bb8; --note: #a3814f; --surface: #fffdfb; --soft: #f7eee7;
+      --btn-bg: white; --water-bg: #eef3f8; --water-border: #cfdcec;
+      --water-ink: #46647f; --water-row: #f4f8fc; --note-bg: #fdf9f1;
+      --note-border: #e8dcc4; --danger-border: #e7c9c1; --danger-bg: #fff5f2;
+      --danger-ink: #8b3e31; --backdrop: #342a2788; --track: #f0e7e0;
+      --shadow-card: #4a30200a; --timer-bg: #eef0e6; --timer-border: #d5dcc4;
+      --timer-ink: #55663a;
     }
 
     html[data-theme="dark"] {
       color-scheme: dark;
-      --bg: #1c1714;
-      --card: #29221e;
-      --ink: #f0e7df;
-      --muted: #a3938a;
-      --line: #3d342e;
-      --left: #c97a67;
-      --left-bg: #3a2b26;
-      --left-border: #553d36;
-      --right: #d9b989;
-      --right-strong: #d8b070;
-      --right-ink: #2e2513;
-      --right-bg: #352c20;
-      --right-border: #554730;
-      --accent: #b08863;
-      --surface: #211b17;
-      --soft: #241d19;
-      --btn-bg: #332b26;
-      --danger-border: #5d423b;
-      --danger-bg: #3a2723;
-      --danger-ink: #e8a596;
-      --danger-running: #a04c3d;
-      --backdrop: #000000aa;
-      --shadow-card: #00000033;
-      --shadow-pop: #00000066;
-      --rem-bg: #24303c;
-      --rem-border: #3c4d5e;
-      --rem-ink: #a9c3da;
+      --bg: #1c1714; --card: #29221e; --ink: #f0e7df; --muted: #a3938a;
+      --wave: #c97a67; --pause: #c9a877; --line: #3d342e; --button: #b08863;
+      --water: #7d9bb8; --note: #b9955e; --surface: #211b17; --soft: #241d19;
+      --btn-bg: #332b26; --water-bg: #24303c; --water-border: #3c4d5e;
+      --water-ink: #a9c3da; --water-row: #26313d; --note-bg: #31281e;
+      --note-border: #55462c; --danger-border: #5d423b; --danger-bg: #3a2723;
+      --danger-ink: #e8a596; --backdrop: #000000aa; --track: #352c25;
+      --shadow-card: #00000033; --timer-bg: #2a2f20; --timer-border: #4a5236;
+      --timer-ink: #b9c99a;
     }
 
     * { box-sizing: border-box; }
-    [hidden] { display: none !important; }
 
     body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--ink);
+      margin: 0; min-height: 100vh;
+      background: var(--bg); color: var(--ink);
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     }
 
-    body, .card, .live-timer, button, select, input, dialog, textarea,
-    .feed-row, .graph-wrap, .stat, .last-feed, .tap-detail, .help-head,
-    .help-close, .live-note, .reminder-banner, .rem-list-row {
+    body, .card, button, select, textarea, dialog, .wave-row, .history-row,
+    .graph-wrap, .stat, .avg, .small-button, .help-head, .help-close,
+    .dialog-close, .viewing-banner, .timer-row {
       transition: background-color .45s ease, border-color .45s ease,
                   color .45s ease, box-shadow .45s ease;
     }
 
+    #fatalError {
+      display: none; margin: 0; padding: 12px 16px;
+      background: #ffe1db; color: #8b1f0e; font-size: .85rem;
+      white-space: pre-wrap; overflow-wrap: anywhere;
+      border-bottom: 2px solid #d95f49;
+    }
+
     main { width: min(100%, 560px); margin: 0 auto; padding: 26px 18px 38px; }
 
-    /* v23: Wach-Modus – Seite dunkelt ab, Berührung hellt auf */
-    main#wakeMain { transition: background-color .45s ease, filter 2s ease; }
-    body.screen-dim main#wakeMain { filter: brightness(.14) saturate(.6); }
-
-    header { margin-bottom: 18px; text-align: center; position: relative; }
-    h1 { margin: 0 0 16px; font-size: 1.6rem; }
-    .muted { color: var(--muted); }
+    header { margin-bottom: 22px; text-align: center; position: relative; }
+    h1 { margin: 0 0 5px; font-size: 1.65rem; }
+    header p, .muted { color: var(--muted); }
+    header p { margin: 0; }
 
     .theme-quick {
-      position: absolute;
-      top: -2px;
-      right: 0;
-      min-width: 46px;
-      min-height: 46px;
-      padding: 0 10px;
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      background: var(--btn-bg);
-      color: var(--ink);
-      font-size: 1.15rem;
-      line-height: 1;
+      position: absolute; top: -2px; right: 0;
+      min-width: 46px; min-height: 46px; padding: 0 10px;
+      border: 1px solid var(--line); border-radius: 13px;
+      background: var(--btn-bg); color: var(--ink);
+      font-size: 1.15rem; line-height: 1;
     }
 
     .card {
-      padding: 20px;
-      border: 1px solid var(--line);
-      border-radius: 21px;
-      background: var(--card);
-      box-shadow: 0 8px 24px var(--shadow-card);
+      padding: 20px; border: 1px solid var(--line); border-radius: 21px;
+      background: var(--card); box-shadow: 0 8px 24px var(--shadow-card);
     }
 
-    button, select, input { font: inherit; }
+    .current { text-align: center; }
+    .session-date { margin: 0 0 12px; color: var(--muted); font-size: .84rem; }
+    .phase { margin: 0 0 5px; color: var(--muted); }
+
+    .timer {
+      margin: 0 0 16px; font-size: clamp(3.2rem, 16vw, 5rem);
+      font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.05em;
+    }
+
+    button, select, textarea, input { font: inherit; }
     button { cursor: pointer; touch-action: manipulation; }
     button:disabled { cursor: not-allowed; opacity: .55; }
 
-    .controls { display: flex; gap: 8px; }
-
-    .live-timer {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      margin-bottom: 14px;
-      padding: 12px;
-      border-radius: 13px;
-      background: var(--soft);
-      border: 1px solid var(--line);
+    button:focus-visible, select:focus-visible, textarea:focus-visible,
+    input:focus-visible {
+      outline: 3px solid var(--ink); outline-offset: 3px;
     }
 
-    .live-timer.recording {
-      background: var(--left-bg);
-      border-color: var(--left-border);
+    .main-button {
+      width: 100%; min-height: 62px; border: 0; border-radius: 17px;
+      background: var(--wave); color: white;
+      font-size: 1.12rem; font-weight: 700;
     }
 
-    .live-timer.tappable { cursor: pointer; }
-
-    .live-status {
-      color: var(--muted);
-      font-size: .78rem;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      font-weight: 700;
-    }
-
-    .live-time {
-      font-size: 2rem;
-      font-weight: 750;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.1;
-    }
-
-    .live-note {
-      margin-top: 2px;
-      font-size: .8rem;
-      font-style: italic;
-      color: var(--ink);
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .side-btn {
-      min-height: 50px;
-      flex: 1;
-      border: 2px solid transparent;
-      border-radius: 12px;
-      font-weight: 700;
-      opacity: .55;
-    }
-
-    .side-btn.left { background: var(--left); color: white; }
-    .side-btn.right { background: var(--right); color: var(--right-ink); }
-    .side-btn.selected { opacity: 1; border-color: var(--ink); }
-
-    .big-toggle {
-      width: 100%;
-      min-height: 62px;
-      margin-top: 14px;
-      border: 0;
-      border-radius: 15px;
-      background: var(--left);
-      color: white;
-      font-weight: 700;
-      font-size: 1.15rem;
-    }
-
-    .big-toggle.running { background: var(--danger-running); }
-
-    .last-feed {
-      margin-top: 14px;
-      padding: 12px 14px;
-      border-radius: 13px;
-      box-shadow: 0 6px 18px var(--shadow-pop);
-      font-size: .9rem;
-      line-height: 1.55;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .last-feed.side-left { background: var(--left); color: white; }
-    .last-feed.side-right { background: var(--right-strong); color: var(--right-ink); }
-    .last-feed strong { font-size: .98rem; display: block; margin-bottom: 2px; }
-    .last-feed .feed-note {
-      margin-top: 6px;
-      padding-top: 6px;
-      border-top: 1px solid rgba(255,255,255,.35);
-      font-style: italic;
-      overflow-wrap: anywhere;
-    }
-
+    .main-button.pause-mode { background: var(--button); }
     .hint { min-height: 1.35em; margin: 12px 0 0; color: var(--muted); font-size: .86rem; }
 
-    /* Erinnerungs-Banner im Hauptbereich */
-    .reminder-banner {
-      margin-top: 12px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: var(--rem-bg);
-      border: 1px solid var(--rem-border);
-      color: var(--rem-ink);
-      font-size: .86rem;
-      font-weight: 650;
-      text-align: center;
-      cursor: pointer;
+    .stats {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px; margin-top: 17px;
     }
 
-    .reminder-banner.rem-fired {
-      animation: remPulse 1.2s ease-in-out infinite alternate;
-    }
-
-    @keyframes remPulse {
-      from { filter: brightness(1); }
-      to { filter: brightness(1.25); }
-    }
-
-    /* v24: Manuelle-Countdown-Leiste oben im Hauptbereich */
-    #remManualBar {
-      margin-top: 10px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: var(--rem-bg);
-      border: 1px solid var(--rem-border);
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    #remManualBar input[type="number"] {
-      min-height: 42px;
-      width: 92px;
-      padding: 4px 10px;
-      border: 1px solid var(--rem-border);
-      border-radius: 11px;
-      background: var(--btn-bg);
-      color: var(--ink);
+    .stat { min-width: 0; padding: 12px 6px; border-radius: 13px; background: var(--soft); }
+    .stat span { display: block; color: var(--muted); font-size: .75rem; }
+    .stat strong {
+      display: block; margin-top: 4px; font-size: 1rem;
       font-variant-numeric: tabular-nums;
     }
 
-    #remManualBar[hidden] { display: none !important; }
-    
-    .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .stat { padding: 11px 6px; border-radius: 13px; }
-    .stat.stat-left { background: var(--left-bg); border: 1px solid var(--left-border); }
-    .stat.stat-right { background: var(--right-bg); border: 1px solid var(--right-border); }
-    .stat.stat-total { background: var(--soft); border: 1px solid var(--line); grid-column: 1 / -1; }
-    .stat span { display: block; color: var(--muted); font-size: .74rem; }
-    .stat strong { display: block; margin-top: 4px; font-size: 1rem; font-variant-numeric: tabular-nums; }
+    .water-status {
+      margin: 13px 0 0; padding: 9px 12px; border-radius: 12px;
+      background: var(--water-bg); color: var(--water-ink);
+      font-size: .86rem; font-weight: 650;
+    }
 
     h2 { margin: 24px 0 11px; font-size: 1.15rem; }
 
-    .graph-wrap {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: var(--surface);
-      overflow: hidden;
-      cursor: pointer;
+    .graph-head {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px; margin: 24px 0 11px;
     }
 
-    canvas { display: block; width: 100%; height: 140px; touch-action: pan-y; }
-
-    .legend { display: flex; gap: 12px; margin-top: 8px; color: var(--muted); font-size: .84rem; }
+    .graph-head h2 { margin: 0; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: .84rem; }
     .dot { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 50%; }
+    .dash { display: inline-block; width: 3px; height: 12px; margin-right: 5px; border-radius: 2px; }
 
-    .timeline-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    .span-group { display: flex; flex: 1 1 100%; gap: 7px; }
-
-    .span-button, .nav-button {
-      min-height: 42px;
-      padding: 5px 12px;
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      background: var(--btn-bg);
-      color: var(--ink);
-      font-size: .86rem;
+    .graph-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px; margin: 0 0 8px;
     }
 
-    .span-group .span-button { flex: 1; }
-    .span-button.active { background: var(--accent); border-color: var(--accent); color: white; }
-    .nav-button.wide { flex: 1; }
-
-    .graph-status { margin: 9px 0 0; color: var(--muted); font-size: .79rem; min-height: 1.2em; }
-
-    .tap-detail {
-      margin: 10px 2px 2px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      box-shadow: 0 6px 18px var(--shadow-pop);
-      font-size: .88rem;
-      line-height: 1.5;
+    .zoom-buttons { display: flex; gap: 7px; }
+    .small-button {
+      min-width: 42px; min-height: 40px; padding: 5px 11px;
+      border: 1px solid var(--line); border-radius: 11px;
+      background: var(--btn-bg); color: var(--ink);
     }
 
-    .tap-detail.side-left { background: var(--left); color: white; }
-    .tap-detail.side-right { background: var(--right-strong); color: var(--right-ink); }
-    .tap-detail .tap-title { font-weight: 700; font-size: .97rem; }
+    .small-button.active { background: var(--button); border-color: var(--button); color: white; }
 
-    .tap-detail .tap-close {
-      float: right;
-      margin: -3px -4px 0 8px;
-      padding: 2px 9px;
-      border: 0;
-      border-radius: 8px;
-      background: rgba(255,255,255,.25);
-      color: inherit;
-      font-size: 1rem;
-      cursor: pointer;
+    .overlay-controls {
+      display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 8px;
+      color: var(--muted); font-size: .84rem;
+    }
+
+    .check { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .check input { width: 17px; height: 17px; accent-color: var(--button); }
+
+    .graph-wrap {
+      width: 100%; overflow: hidden; border: 1px solid var(--line);
+      border-radius: 14px; background: var(--surface); touch-action: none;
+    }
+
+    canvas { display: block; width: 100%; height: 190px; }
+    .graph-hint { margin: 9px 0 0; color: var(--muted); font-size: .79rem; }
+
+    .average-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 13px; color: var(--muted); font-size: .88rem;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      min-height: 42px; padding: 7px 10px;
+      border: 1px solid var(--line); border-radius: 11px;
+      background: var(--btn-bg); color: var(--ink);
+    }
+
+    select { padding-right: 30px; }
+
+    .avg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .avg { padding: 12px 6px; border-radius: 13px; background: var(--soft); text-align: center; }
+    .avg span { display: block; color: var(--muted); font-size: .73rem; }
+    .avg strong {
+      display: block; margin-top: 4px; font-size: .98rem;
+      font-variant-numeric: tabular-nums;
     }
 
     details > summary { padding: 4px 0; cursor: pointer; font-weight: 650; }
     .list { display: grid; gap: 9px; margin-top: 13px; }
 
-    .feed-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      background: var(--surface);
+    .wave-row, .history-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 12px;
+      border: 1px solid var(--line); border-radius: 13px; background: var(--surface);
     }
 
-    .feed-row.side-left { border-color: var(--left-border); background: var(--left-bg); }
-    .feed-row.side-right { border-color: var(--right-border); background: var(--right-bg); }
+    .wave-row.water-row { border-color: var(--water-border); background: var(--water-row); }
+    .wave-row.note-row { border-color: var(--note-border); background: var(--note-bg); }
 
-    .side-badge {
-      display: inline-block;
-      min-width: 22px;
-      padding: 1px 7px;
-      margin-right: 8px;
-      border-radius: 8px;
-      font-size: .74rem;
-      font-weight: 700;
+    .wave-info, .history-info { min-width: 0; }
+    .wave-title, .history-title { font-weight: 650; }
+    .wave-detail, .history-detail { margin-top: 3px; color: var(--muted); font-size: .82rem; }
+    .wave-detail.note-text { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+
+    .delete-button, .history-button {
+      flex: 0 0 auto; min-height: 38px; padding: 6px 10px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: var(--btn-bg); color: var(--ink); font-size: .84rem;
     }
 
-    .side-left .side-badge { background: var(--left); color: white; }
-    .side-right .side-badge { background: var(--right-strong); color: var(--right-ink); }
-
-    .feed-info { min-width: 0; }
-    .feed-title { font-weight: 650; }
-    .feed-detail { margin-top: 3px; color: var(--muted); font-size: .82rem; }
-    .feed-detail.feed-note { color: var(--ink); font-style: italic; overflow-wrap: anywhere; }
-
-    .row-buttons { display: flex; gap: 6px; flex: 0 0 auto; }
-
-    .delete-button, .history-button, .note-button {
-      flex: 0 0 auto;
-      min-height: 38px;
-      padding: 6px 10px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--btn-bg);
-      color: var(--ink);
-      font-size: .84rem;
+    .delete-button {
+      border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-ink);
     }
 
-    .note-button { border-color: var(--accent); }
+    .delete-button.water-delete {
+      border-color: var(--water-border); background: var(--btn-bg); color: var(--water-ink);
+    }
 
     .empty { padding: 12px 0; color: var(--muted); text-align: center; font-size: .9rem; }
     .note { margin: 18px 2px 0; color: var(--muted); font-size: .79rem; line-height: 1.5; }
 
+    .action-button {
+      width: 100%; min-height: 50px; margin-top: 12px;
+      border: 1px solid var(--danger-border); border-radius: 14px;
+      background: var(--danger-bg); color: var(--danger-ink); font-weight: 650;
+    }
+
+    .action-button.secondary {
+      border-color: var(--line); background: var(--btn-bg); color: var(--ink);
+    }
+
+    .event-inputs { margin-top: 13px; display: grid; gap: 9px; }
+
+    .water-button {
+      width: 100%; min-height: 48px;
+      border: 1px solid var(--water-border); border-radius: 13px;
+      background: var(--water-bg); color: var(--water-ink); font-weight: 650;
+    }
+
+    .note-input { display: grid; gap: 8px; }
+
+    textarea {
+      width: 100%; min-height: 58px; padding: 10px 12px;
+      border: 1px solid var(--line); border-radius: 12px;
+      background: var(--btn-bg); color: var(--ink); resize: vertical;
+    }
+
+    .note-button {
+      min-height: 42px; padding: 6px 14px;
+      border: 1px solid var(--line); border-radius: 11px;
+      background: var(--soft); color: var(--ink); font-weight: 650;
+    }
+
+    .viewing-banner {
+      margin: 0 0 14px; padding: 10px; border-radius: 12px;
+      background: var(--soft); color: var(--muted); font-size: .86rem;
+    }
+
     .setting-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
     }
 
     .setting-row + .setting-row { margin-top: 10px; }
     .setting-row p { margin: 0; font-size: .92rem; }
-    .setting-row label { display: flex; align-items: center; gap: 8px; font-size: .92rem; cursor: pointer; }
 
-    .setting-row select, .setting-row input[type="time"], .setting-row input[type="number"],
-    .setting-row input[type="text"] {
-      min-height: 42px;
-      padding: 4px 10px;
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      background: var(--btn-bg);
-      color: var(--ink);
+    .setting-row select, .setting-row input[type="time"] {
+      min-height: 42px; padding: 4px 10px;
+      border: 1px solid var(--line); border-radius: 11px;
+      background: var(--btn-bg); color: var(--ink);
     }
 
-    .setting-row input[type="number"] { width: 92px; }
-    .setting-row input[type="text"] { max-width: 130px; }
+    #themeWindowRow[hidden] { display: none !important; }
 
-    .settings-block { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
-    .settings-block > .setting-row:first-child { margin-top: 0; }
+    /* v11: Benutzerdefinierte Timer */
+    .timer-add-row { display: flex; gap: 8px; margin-top: 13px; }
+    .timer-add-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
+    .timer-add-row input[type="number"] { flex: 0 0 90px; }
+    .timer-add-row button { flex: 0 0 auto; min-height: 42px; padding: 6px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--soft); color: var(--ink); font-weight: 650; }
 
-    .rem-times { display: grid; gap: 7px; margin-top: 10px; }
-
-    .rem-list-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 8px 10px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--surface);
-      font-size: .9rem;
-      font-variant-numeric: tabular-nums;
+    .timer-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 12px; margin-top: 9px;
+      border: 1px solid var(--timer-border); border-radius: 12px;
+      background: var(--timer-bg); color: var(--timer-ink);
     }
 
-    .rem-add-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
-    .rem-add-row input[type="time"] { flex: 0 0 auto; }
-
-    .small-action {
-      min-height: 40px;
-      padding: 5px 14px;
-      border: 1px solid var(--accent);
-      border-radius: 10px;
-      background: var(--btn-bg);
-      color: var(--ink);
-      font-size: .86rem;
-      font-weight: 650;
+    .timer-row .timer-name { font-weight: 650; }
+    .timer-row .timer-rest { font-variant-numeric: tabular-nums; font-size: .92rem; }
+    .timer-row .timer-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+    .timer-row button {
+      min-height: 34px; padding: 4px 10px; font-size: .8rem;
+      border: 1px solid var(--line); border-radius: 9px;
+      background: var(--btn-bg); color: var(--ink);
     }
-
-    .rem-inline-note { margin: 8px 0 0; color: var(--muted); font-size: .79rem; line-height: 1.5; }
-
-    input[type="range"] { accent-color: var(--accent); width: 140px; }
-
-    #themeWindowRow[hidden], #remFixedRows[hidden], #remIntervalRows[hidden],
-    #remManualRows[hidden], #remFrameRows[hidden], #remCustomRows[hidden],
-    #remManualBar[hidden] {
-      display: none !important;
+    .timer-row button.timer-stop {
+      border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-ink);
     }
+    .timer-row.ringing { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-ink); font-weight: 700; }
 
-    .action-button {
-      width: 100%;
-      min-height: 50px;
-      margin-top: 12px;
-      border: 1px solid var(--danger-border);
-      border-radius: 14px;
-      background: var(--danger-bg);
-      color: var(--danger-ink);
-      font-weight: 650;
+    /* v11: Sicherung */
+    .backup-row { display: flex; flex-wrap: wrap; gap: 9px; }
+    .backup-row button {
+      flex: 1 1 150px; min-height: 46px;
+      border: 1px solid var(--line); border-radius: 12px;
+      background: var(--btn-bg); color: var(--ink); font-weight: 650;
     }
-
-    .action-button.secondary { border-color: var(--line); background: var(--btn-bg); color: var(--ink); }
-    .backup-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .backup-note { margin-top: 10px; color: var(--muted); font-size: .8rem; line-height: 1.5; }
 
     dialog {
-      width: min(100%, 520px);
-      max-height: 80vh;
-      padding: 0;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--card);
-      color: var(--ink);
+      width: min(100%, 520px); max-height: 80vh; padding: 0;
+      border: 1px solid var(--line); border-radius: 18px;
+      background: var(--card); color: var(--ink);
     }
 
     dialog::backdrop { background: var(--backdrop); }
 
     .help-head {
-      position: sticky;
-      top: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 18px 12px;
-      background: var(--card);
-      border-bottom: 1px solid var(--line);
+      position: sticky; top: 0; display: flex; align-items: center;
+      justify-content: space-between; padding: 16px 18px 12px;
+      background: var(--card); border-bottom: 1px solid var(--line);
     }
 
     .help-head h3 { margin: 0; font-size: 1.1rem; }
 
     .help-close {
-      min-height: 38px;
-      padding: 4px 14px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--btn-bg);
-      color: var(--ink);
+      min-height: 38px; padding: 4px 14px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: var(--btn-bg); color: var(--ink);
     }
 
     .help-body { padding: 14px 18px 20px; font-size: .9rem; line-height: 1.55; }
@@ -528,297 +345,193 @@
     .help-body ul { margin: 4px 0 10px; padding-left: 20px; }
     .help-body li { margin: 3px 0; }
 
-    #dimShield {
-      touch-action: none;
-      -webkit-user-select: none;
-      user-select: none;
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      background: transparent;
-      cursor: pointer;
+    dialog.detail-dialog { width: min(92vw, 420px); max-width: 92vw; }
+
+    .dialog-inner { padding: 20px; }
+    .dialog-title { margin: 0; font-size: 1.06rem; font-weight: 700; }
+    .dialog-sub { margin: 5px 0 0; color: var(--muted); font-size: .84rem; }
+    .dialog-body {
+      margin: 13px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55;
+    }
+
+    .dialog-close {
+      width: 100%; min-height: 46px; margin-top: 16px;
+      border: 1px solid var(--line); border-radius: 13px;
+      background: var(--btn-bg); color: var(--ink); font-weight: 650;
     }
 
     @media (max-width: 360px) {
       main { padding-right: 12px; padding-left: 12px; }
       .card { padding: 16px 13px; }
-      .stat span { font-size: .68rem; }
-      .stat strong { font-size: .88rem; }
+      .stat span, .avg span { font-size: .68rem; }
+      .stat strong, .avg strong { font-size: .88rem; }
     }
   </style>
 </head>
 <body>
-  <div id="saveWarning" role="alert" style="display:none;margin:0;padding:12px 16px;background:#ffe1db;color:#8b1f0e;font-size:.85rem;line-height:1.5;border-bottom:2px solid #d95f49;"></div>
+  <div id="fatalError" role="alert"></div>
 
-  <div id="dimShield" hidden></div>
-  <main id="wakeMain">
+  <main>
     <header>
-      <h1>Still-Tracker</h1>
+      <h1>Wellen-Tracker</h1>
       <button class="theme-quick" id="themeQuick" type="button" title="Hell/Dunkel umschalten">🌙</button>
     </header>
 
     <div class="viewing-banner" id="viewingBanner" hidden></div>
 
-    <section class="card" aria-live="polite">
+    <section class="card current" aria-live="polite">
+      <p class="session-date" id="sessionDate"></p>
+      <p class="phase" id="phase">Bereit</p>
+      <p class="timer" id="timer">00:00</p>
+      <button class="main-button" id="toggle" type="button">Welle starten</button>
+      <p class="hint" id="hint">Tippe beim Beginn einer Welle auf den Knopf.</p>
 
-      <div class="live-timer" id="liveTimer" title="">
-        <span class="live-status" id="liveStatus"></span>
-        <span class="live-time" id="liveTime">00:00</span>
-        <span class="live-note" id="liveNote" hidden></span>
+      <div class="stats">
+        <div class="stat"><span>Letzte Welle</span><strong id="lastWave">—</strong></div>
+        <div class="stat"><span>Wellenpause</span><strong id="lastPause">—</strong></div>
+        <div class="stat"><span>Wellenabstand</span><strong id="lastInterval">—</strong></div>
       </div>
 
-      <div class="controls">
-        <button class="side-btn left" id="sideLeft" type="button">◀ Links</button>
-        <button class="side-btn right" id="sideRight" type="button">Rechts ▶</button>
-      </div>
-
-      <button class="big-toggle" id="bigToggle" type="button">Stillzeit starten</button>
-      <div class="last-feed" id="lastFeed" hidden title="Antippen: Notiz zur letzten Stillzeit"></div>
-
-      <div id="remManualBar" hidden>
-        <input type="number" id="remManualMinTop" min="1" max="720" value="180">
-        <button class="small-action" id="remManualStartTop" type="button" style="flex:1">Countdown starten</button>
-      </div>
-
-      <div class="reminder-banner" id="reminderBanner" hidden></div>
-      <p class="hint" id="feedHint"></p>
+      <p class="water-status" id="waterStatus" hidden></p>
     </section>
 
-    <h2>Zeitstrahl</h2>
-    <section class="card">
-      <div class="graph-wrap" id="graphWrap">
-        <canvas id="feedGraph" aria-label="Zeitstrahl der Stillzeiten"></canvas>
-      </div>
+    <div class="graph-head">
+      <h2>Wellenverlauf</h2>
       <div class="legend">
-        <span><i class="dot" style="background:var(--left)"></i>Links (oben)</span>
-        <span><i class="dot" style="background:var(--right-strong)"></i>Rechts (unten)</span>
+        <span><i class="dot" style="background:var(--wave)"></i>Welle</span>
+        <span><i class="dot" style="background:var(--pause)"></i>Pause</span>
+        <span><i class="dash" style="background:var(--water)"></i>Blasensprung</span>
+        <span><i class="dot" style="background:var(--note)"></i>Notiz</span>
       </div>
-      <div id="tapDetailHost"></div>
-      <div class="timeline-controls">
-        <div class="span-group">
-          <button class="span-button" data-span="1" type="button">1 Std</button>
-          <button class="span-button" data-span="3" type="button">3 Std</button>
-          <button class="span-button active" data-span="12" type="button">12 Std</button>
-          <button class="span-button" data-span="24" type="button">24 Std</button>
-          <button class="span-button" data-span="72" type="button">3 T</button>
-          <button class="span-button" data-span="168" type="button">7 T</button>
+    </div>
+
+    <section class="card">
+      <div class="graph-controls">
+        <div class="zoom-buttons">
+          <button class="small-button active" id="modeElapsed" type="button">Seit Start</button>
+          <button class="small-button" id="modeClock" type="button">Uhrzeit</button>
+          <button class="small-button" id="reverseTime" type="button" title="Zeitstrahl im Modus „Seit Start“ umdrehen">◀▶</button>
         </div>
-        <button class="nav-button" id="zoomOut" type="button" aria-label="Herauszoomen">−</button>
-        <button class="nav-button wide" id="jumpNow" type="button">Jetzt</button>
-        <button class="nav-button" id="zoomIn" type="button" aria-label="Hineinzoomen">+</button>
-        <button class="nav-button" id="panBack" type="button">◀ zurück</button>
-        <button class="nav-button" id="panForward" type="button">vor ▶</button>
+        <div class="zoom-buttons">
+          <button class="small-button" id="zoomOut" type="button" aria-label="Herauszoomen">−</button>
+          <button class="small-button" id="zoomIn" type="button" aria-label="Hineinzoomen">+</button>
+          <button class="small-button" id="resetView" type="button">Alles</button>
+        </div>
       </div>
-      <p class="graph-status" id="graphStatus"></p>
+      <div class="graph-wrap" id="graphWrap">
+        <canvas id="graph" aria-label="Graphischer Verlauf von Wellen und Pausen"></canvas>
+      </div>
+      <div class="overlay-controls">
+        <label class="check"><input type="checkbox" id="showWater" checked> Blasensprung einblenden</label>
+        <label class="check"><input type="checkbox" id="showNotes" checked> Notizen einblenden</label>
+      </div>
+      <p class="graph-hint">Mit zwei Fingern zoomen, mit einem Finger seitlich verschieben. Notizen und Blasensprünge antippen, um Details zu lesen. „◀▶“ dreht den Zeitstrahl im Modus „Seit Start“ um.</p>
     </section>
-    <h2>Statistik</h2>
+
+    <h2>Durchschnittswerte</h2>
     <section class="card">
-      <div class="stats" id="statsBox"></div>
+      <div class="average-controls">
+        <label for="averageWindow">Zeitraum:</label>
+        <select id="averageWindow">
+          <option value="10">Letzte 10 Minuten</option>
+          <option value="20">Letzte 20 Minuten</option>
+          <option value="30">Letzte 30 Minuten</option>
+          <option value="40">Letzte 40 Minuten</option>
+          <option value="50">Letzte 50 Minuten</option>
+          <option value="60">Letzte 60 Minuten</option>
+        </select>
+      </div>
+      <div class="avg-grid">
+        <div class="avg"><span>Ø Welle</span><strong id="avgWave">—</strong></div>
+        <div class="avg"><span>Ø Pause</span><strong id="avgPause">—</strong></div>
+        <div class="avg"><span>Ø Abstand</span><strong id="avgInterval">—</strong></div>
+      </div>
     </section>
 
-    <h2>Einstellungen</h2>
+    <h2>Wellendaten</h2>
     <section class="card">
-      <details id="settingsDetails" open>
-        <summary>Einstellungen ein-/ausklappen</summary>
-        <div class="setting-row">
-          <p>Nach dem Stillen die Seite …</p>
-          <select id="autoSwitch">
-            <option value="on">automatisch wechseln</option>
-            <option value="off">nicht ändern</option>
-          </select>
+      <div class="event-inputs">
+        <button class="water-button" id="addWater" type="button">Blasensprung dokumentieren</button>
+        <div class="note-input">
+          <textarea id="noteText" rows="2" placeholder="Notiz eintragen (z. B. Position, Befinden) …"></textarea>
+          <button class="note-button" id="addNote" type="button">Notiz speichern</button>
         </div>
-        <div class="setting-row">
-          <p>Farbschema</p>
-          <select id="themeMode">
-            <option value="manual">manuell umschalten</option>
-            <option value="window">nach Zeitfenster</option>
-            <option value="os">wie System/Browser</option>
-          </select>
-        </div>
-        <div class="setting-row" id="themeWindowRow" hidden>
-          <p>Dunkel von … bis …</p>
-          <span style="display:flex;gap:6px;align-items:center">
-            <input type="time" id="themeStart" value="20:00">
-            <input type="time" id="themeEnd" value="07:00">
-          </span>
-        </div>
-
-        <div class="settings-block">
-          <div class="setting-row">
-            <label for="remEnabled"><input type="checkbox" id="remEnabled"> Erinnerung aktiv</label>
-          </div>
-        </div>
-
-        <details class="settings-block" id="remSettings" hidden>
-          <summary>Erinnerung ein-/ausklappen</summary>
-          <div class="setting-row">
-            <p>Modus</p>
-            <select id="remMode">
-              <option value="fixed">feste Uhrzeiten</option>
-              <option value="interval">fester Abstand</option>
-              <option value="manual">manueller Countdown</option>
-            </select>
-          </div>
-
-          <div id="remFixedRows" hidden>
-            <div class="rem-times" id="remTimesList"></div>
-            <div class="rem-add-row">
-              <input type="time" id="remNewTime" value="06:00">
-              <button class="small-action" id="remAddTime" type="button">+ Uhrzeit</button>
-            </div>
-            <p class="rem-inline-note">Der Ton klingelt zu jeder eingetragenen Uhrzeit, solange der Tracker geöffnet ist.</p>
-          </div>
-
-          <div id="remIntervalRows" hidden>
-            <div class="setting-row">
-              <p>Abstand (Minuten)</p>
-              <input type="number" id="remIntervalMin" min="1" max="720" value="180">
-            </div>
-            <div class="setting-row">
-              <label for="remFrameOn"><input type="checkbox" id="remFrameOn"> nur in Zeitrahmen erinnern</label>
-            </div>
-            <div class="setting-row" id="remFrameRows" hidden>
-              <p>Aktiv von … bis …</p>
-              <span style="display:flex;gap:6px;align-items:center">
-                <input type="time" id="remFrameStart" value="22:00">
-                <input type="time" id="remFrameEnd" value="06:00">
-              </span>
-            </div>
-            <p class="rem-inline-note">Der Abstand gilt ab Ende der letzten Stillzeit. Ein neues Stillen setzt den Timer neu. Während einer laufenden Stillzeit wird nicht erinnert.</p>
-          </div>
-
-          <div id="remManualRows" hidden>
-            <div class="setting-row">
-              <p>Countdown (Minuten)</p>
-              <input type="number" id="remManualMin" min="1" max="720" value="180">
-            </div>
-            <div class="setting-row">
-              <p>Status</p>
-              <button class="small-action" id="remManualStart" type="button">Countdown starten</button>
-            </div>
-            <p class="rem-inline-note">Der Countdown läuft einmalig ab dem Start; danach steht er wieder auf „Bereit“ und kann neu gestartet werden.</p>
-          </div>
-
-          <div class="settings-block">
-            <div class="setting-row">
-              <label for="remWakeOn"><input type="checkbox" id="remWakeOn" checked> Bildschirm wachhalten (Wach-Modus)</label>
-            </div>
-            <p class="rem-inline-note" id="remWakeStatus"></p>
-            <p class="rem-inline-note">Solange die Erinnerung aktiv ist (im Zeitrahmen), bleibt der Bildschirm an und die Seite dunkelt nach kurzer Zeit ab. Jede Berührung hellt sofort wieder auf. Manuell sperren kannst du jederzeit – dann klingelt die Erinnerung erst nach dem Entsperren. Beachte den Akkuverbrauch.</p>
-          </div>
-
-          <div class="settings-block">
-            <div class="setting-row">
-              <p>Klingelton</p>
-              <select id="remTone">
-                <option value="default">Standard (Spieldose)</option>
-                <option value="custom">Eigener Ton</option>
-              </select>
-            </div>
-            <div id="remCustomRows" hidden>
-              <div class="rem-add-row">
-                <button class="small-action" id="remPickTone" type="button">Ton auswählen …</button>
-                <span class="rem-inline-note" id="remCustomName" style="margin:0"></span>
-              </div>
-              <p class="rem-inline-note">Kurze Audiodateien (bis ca. 1–2 MB) passen am besten in den Browser-Speicher.</p>
-            </div>
-            <div class="setting-row">
-              <p>Lautstärke</p>
-              <span style="display:flex;gap:8px;align-items:center">
-                <input type="range" id="remVolume" min="0" max="100" value="60">
-                <button class="small-action" id="remTest" type="button">Test ▶</button>
-              </span>
-            </div>
-            <p class="rem-inline-note">
-              Wichtig: Die Erinnerung klingelt nur, solange der Tracker geöffnet ist.
-              Zuverlässig funktioniert sie über die Startbildschirm-Verknüpfung der App —
-              <button class="small-action" id="remHowto" type="button" style="min-height:32px;padding:2px 10px">Wie geht das?</button>
-            </p>
-          </div>
-        </details>
+      </div>
+      <details id="recordsDetails">
+        <summary id="recordsSummary">Wellendaten anzeigen</summary>
+        <div class="list" id="recordsList"></div>
       </details>
     </section>
 
-    <h2>Stillzeiten</h2>
+    <h2>Benutzerdefinierte Timer</h2>
     <section class="card">
-      <details id="feedDetails">
-        <summary id="feedSummary">Einträge anzeigen</summary>
-        <div class="list" id="feedList"></div>
-      </details>
+      <p class="graph-hint" style="margin:0 0 4px">Mehrere eigene Timer mit Stichwort, z. B. „Wende“ 15 min. Läuft parallel zur Wellenaufzeichnung.</p>
+      <div class="timer-add-row">
+        <input type="text" id="customTimerLabel" placeholder="Stichwort (z. B. Wende)" maxlength="40">
+        <input type="number" id="customTimerMinutes" min="1" max="720" value="15" aria-label="Minuten">
+        <button id="customTimerStart" type="button">Start</button>
+      </div>
+      <div id="customTimersList"></div>
     </section>
 
-    <h2>Messreihen</h2>
+    <h2>Messungshistorie</h2>
     <section class="card">
       <details id="historyDetails">
-        <summary id="historySummary">Gespeicherte Reihen anzeigen</summary>
+        <summary id="historySummary">Gespeicherte Messungen anzeigen</summary>
         <div class="list" id="historyList"></div>
       </details>
     </section>
 
-    <button class="action-button" id="finishSeries" type="button">Messreihe beenden</button>
-    <button class="action-button" id="newSeries" type="button">Neue Messreihe starten</button>
-
     <h2>Sicherung &amp; Daten</h2>
     <section class="card">
-      <p class="muted" style="margin:0 0 12px;font-size:.86rem">
-        Die Daten werden dauerhaft im Browser-Speicher dieses Geräts gespeichert.
-        Erstelle regelmäßig eine Sicherungsdatei und lies sie bei einem Wechsel wieder ein.
-      </p>
-      <div class="backup-controls">
-        <button class="action-button secondary" id="exportData" type="button" style="margin-top:0">Sicherung exportieren</button>
-        <button class="action-button secondary" id="importData" type="button" style="margin-top:0">Sicherung importieren</button>
+      <div class="backup-row">
+        <button id="exportData" type="button">Sicherung exportieren</button>
+        <button id="importData" type="button">Sicherung importieren</button>
       </div>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
-      <input type="file" id="remToneFile" accept="audio/*" hidden>
+      <p class="backup-note">Der Export speichert alle Messungen, Blasensprünge, Notizen, benutzerdefinierte Timer und die Farbschema-Einstellung als JSON-Datei. Der Import ersetzt die aktuellen Daten in diesem Browser durch die Datei.</p>
+    </section>
+
+    <button class="action-button secondary" id="returnCurrent" type="button" hidden>
+      Zur aktuellen Messung
+    </button>
+    <button class="action-button" id="finishSession" type="button">Messung beenden</button>
+    <button class="action-button" id="newSession" type="button">Neue Messung starten</button>
+
+    <h2>Einstellungen</h2>
+    <section class="card">
+      <div class="setting-row">
+        <p>Farbschema</p>
+        <select id="themeMode">
+          <option value="manual">manuell umschalten</option>
+          <option value="window">nach Zeitfenster</option>
+          <option value="os">wie System/Browser</option>
+        </select>
+      </div>
+      <div class="setting-row" id="themeWindowRow" hidden>
+        <p>Dunkel von … bis …</p>
+        <span style="display:flex;gap:6px;align-items:center">
+          <input type="time" id="themeStart" value="20:00">
+          <input type="time" id="themeEnd" value="07:00">
+        </span>
+      </div>
     </section>
 
     <button class="action-button secondary" id="helpButton" type="button">ℹ️ Anleitung &amp; Hilfe</button>
 
     <p class="note">
-      Die Daten werden bei jeder Änderung sofort dauerhaft im Browser-Speicher gespeichert
-      und sind auch nach dem Schließen von App oder Browser vollständig erhalten. Sie können
-      dennoch durch das Löschen der Browserdaten oder im privaten Modus verloren gehen;
-      nutze deshalb zusätzlich den Export. Der Tracker dient der Zeitmessung und ersetzt
-      keine medizinische Einschätzung.
+      Messungen werden automatisch in diesem Browser gespeichert. Sie können durch das
+      Löschen der Browserdaten oder im privaten Modus verloren gehen. Der Tracker dient der
+      Zeitmessung und ersetzt keine medizinische Einschätzung.
     </p>
   </main>
 
-  <dialog id="reminderHowtoDialog">
-    <div class="help-head">
-      <h3>Startbildschirm-Verknüpfung &amp; Wach-Modus</h3>
-      <button class="help-close" id="reminderHowtoClose" type="button">Schließen</button>
-    </div>
-    <div class="help-body">
-      <p>Für zuverlässige Erinnerungen sollte der Tracker als App-Verknüpfung auf dem
-      Startbildschirm geöffnet werden — nicht als normale Browser-Registerkarte.</p>
-      <h4>Android (Chrome)</h4>
-      <ul>
-        <li>Tracker in Chrome öffnen</li>
-        <li>Menü (⋮) → <strong>„Zum Startbildschirm hinzufügen“</strong></li>
-      </ul>
-      <h4>Android (Firefox)</h4>
-      <ul>
-        <li>Tracker in Firefox öffnen</li>
-        <li>Menü (⋮) → <strong>„Zum Startbildschirm hinzufügen“</strong></li>
-      </ul>
-      <h4>iPhone/iPad (Safari)</h4>
-      <ul>
-        <li>Tracker in Safari öffnen</li>
-        <li>Teilen-Symbol → <strong>„Zum Home-Bildschirm“</strong></li>
-      </ul>
-      <h4>Firefox am Computer</h4>
-      <p>Der Desktop-Firefox hat keine „Zum Startbildschirm“-Funktion. Dort entweder
-      Chrome/Edge für die Verknüpfung nutzen oder den Reiter des Trackers anpinnen
-      (Rechtsklick auf den Reiter → „Reiter anpinnen“).</p>
-      <h4>Wach-Modus (Bildschirm bleibt an)</h4>
-      <p>Ist die Erinnerung aktiv (im Zeitrahmen), verhindert der Wach-Modus das
-      automatische Abschalten des Bildschirms; die Seite dunkelt dabei stark ab.
-      Berühren hellt sie sofort wieder auf. <strong>Von Hand gesperrt</strong> werden kann
-      der Bildschirm jederzeit — in dem Fall klingelt die Erinnerung erst, nachdem
-      du wieder entsperrst. Falls der Browser die Frage „Bildschirm eingeschaltet
-      lassen?“ zeigt, beantworte sie mit „Zulassen“.</p>
-      <p>Bei komplett geschlossenem Browser oder gesperrtem Bildschirm können Webseiten
-      grundsätzlich nicht klingeln — dafür bräuchte es eine echte installierte App.</p>
+  <dialog class="detail-dialog" id="detailDialog">
+    <div class="dialog-inner">
+      <h3 class="dialog-title" id="dialogTitle"></h3>
+      <p class="dialog-sub" id="dialogSub"></p>
+      <div class="dialog-body" id="dialogBody" hidden></div>
+      <button class="dialog-close" id="dialogClose" type="button">Schließen</button>
     </div>
   </dialog>
 
@@ -828,220 +541,289 @@
       <button class="help-close" id="helpClose" type="button">Schließen</button>
     </div>
     <div class="help-body">
-      <h4>Stillzeit aufzeichnen</h4>
+      <h4>Wellen aufzeichnen</h4>
       <ul>
-        <li><strong>Seite wählen:</strong> Tippe auf „Links“ oder „Rechts“ – die markierte Seite gilt für die Aufzeichnung.</li>
-        <li><strong>Starten / Beenden:</strong> Der große Button startet und beendet die Stillzeit. Ein laufender Timer zeigt die bisherige Dauer.</li>
-        <li><strong>Seitenwechsel mitten im Stillen:</strong> Wählst du während einer laufenden Aufzeichnung die andere Seite, wird der Eintrag an dieser Stelle beendet und sofort auf der neuen Seite weitergemessen – es geht keine Zeit verloren.</li>
-        <li><strong>Einstellung „Nach dem Stillen die Seite …“:</strong> Mit „automatisch wechseln“ stellt der Tracker nach Beenden einer Stillzeit automatisch die andere Seite ein; mit „nicht ändern“ bleibt die gewählte Seite stehen.</li>
+        <li><strong>Welle starten:</strong> Tippe beim Beginn einer Welle auf den großen Knopf. Der Timer läuft.</li>
+        <li><strong>Welle beenden / Pause:</strong> Ein weiterer Tipp beendet die Welle und startet automatisch die Pause.</li>
+        <li><strong>Nächste Welle:</strong> Während der Pause zeigt der Knopf „Nächste Welle starten“ – ein Tipp beendet die Pause und startet die Welle.</li>
+        <li><strong>Lücken:</strong> Nach „Messung beenden“ bzw. einer beendeten Phase bleibt der Timer stehen, bis du wieder auf „Welle starten“ tippst. Zeiten ohne Aufzeichnung erscheinen im Verlauf als Leerstelle.</li>
       </ul>
 
-      <h4>Notizen</h4>
+      <h4>Wellenverlauf (Zeitstrahl)</h4>
       <ul>
-        <li><strong>Während des Stillens:</strong> Tippe auf den Timer-Kasten oben, um eine Notiz zur laufenden Stillzeit zu erfassen. Sie wandert beim Beenden automatisch mit dem Eintrag mit.</li>
-        <li><strong>Nach dem Stillen:</strong> Tippe auf die „Zuletzt“-Box, um eine Notiz zur letzten Stillzeit zu erfassen oder zu ändern.</li>
-        <li><strong>Nachträglich:</strong> Jede Stillzeit in der Liste unten hat einen „Notiz“-Button. Leeres Feld + OK entfernt die Notiz wieder.</li>
+        <li><strong>Zwei Ansichten:</strong> „Seit Start“ zeigt die vergangene Zeit seit der ersten Welle, „Uhrzeit“ die tatsächliche Uhrzeit.</li>
+        <li><strong>Zeitstrahl umdrehen („◀▶“):</strong> Im Modus „Seit Start“ kannst du die Richtung umkehren – der Start der Messung steht dann rechts und die jüngeren Wellen laufen nach links. Im Uhrzeit-Modus ist die Taste deaktiviert.</li>
+        <li>Mit − / + zoomen, „Alles“ zeigt den gesamten Verlauf. Zwei Finger zoomen, ein Finger verschiebt seitlich.</li>
       </ul>
 
-      <h4>Erinnerung</h4>
+      <h4>Wellendaten-Liste</h4>
+      <p>Jede Welle wird mit <strong>Datum und Uhrzeit</strong> aufgelistet und zeigt <strong>Dauer</strong>, die <strong>Pause danach</strong> und den <strong>Abstand</strong> zur vorherigen Welle.</p>
+
+      <h4>Benutzerdefinierte Timer</h4>
       <ul>
-        <li><strong>Aktivieren:</strong> In den Einstellungen über „Erinnerung aktiv“ – erst dann erscheinen die Erinnerungsoptionen und der Hinweiskasten im Hauptbereich.</li>
-        <li><strong>Alarm-Schleife:</strong> Wenn es klingelt, läuft der Ton so lange, bis du den Hinweiskasten antippst, eine neue Stillzeit startest oder die Seite wechselst.</li>
-        <li><strong>Feste Uhrzeiten:</strong> Beliebig viele Uhrzeiten eintragen; zu jeder klingelt der Ton.</li>
-        <li><strong>Fester Abstand:</strong> Getaktet ab dem Ende der letzten Stillzeit; jedes neue Stillen setzt den Timer neu. Optional auf einen Zeitrahmen (z. B. nachts) beschränkt.</li>
-        <li><strong>Manueller Countdown:</strong> Minuten eingeben, „Countdown starten“ – läuft einmalig und steht danach auf „Bereit“.</li>
-        <li><strong>Klang:</strong> Standard ist ein ruhiger Spieldosen-Klang (Brahms' Wiegenlied); eigener Ton per Upload möglich, Lautstärke einstellbar, Test-Knopf zum Probehören (erneutes Antippen stoppt den Test).</li>
-        <li><strong>Wach-Modus:</strong> Hält den Bildschirm an, solange die Erinnerung im Zeitrahmen aktiv ist; die Seite dunkelt ab, Berührung hellt auf. Manuelles Sperren bleibt möglich.</li>
-        <li><strong>Wichtig:</strong> Von Hand gesperrter Bildschirm oder geschlossener Browser = kein Klingeln; nach dem Entsperren/Öffnen wird eine fällige Erinnerung sofort nachgeholt.</li>
+        <li>Stichwort (z. B. „Wende“) und Minuten eintragen, dann „Start“ – mehrere Timer können gleichzeitig laufen.</li>
+        <li>Abgelaufene Timer werden farblich hervorgehoben und können quittiert („OK“) werden; mit ✕ verschwindet der Eintrag.</li>
+        <li>Timer gehören zur App (nicht zu einer einzelnen Messung) und sind in der Sicherung enthalten.</li>
+      </ul>
+
+      <h4>Sicherung &amp; Daten</h4>
+      <p>„Sicherung exportieren“ speichert alle Messungen, Wellendaten, Timer und die Farbschema-Einstellung als JSON-Datei. „Sicherung importieren“ stellt diese Datei wieder her und ersetzt dabei die aktuellen Daten des Browsers.</p>
+
+      <h4>Messungen verwalten</h4>
+      <ul>
+        <li>„Messung beenden“ schließt die Aufzeichnung ab; sie bleibt in der Historie. Per „Welle starten“ wird sie fortgesetzt.</li>
+        <li>Über „Öffnen“ in der Messungshistorie kannst du alte Messungen ansehen; „Zur aktuellen Messung“ bringt dich zurück.</li>
       </ul>
 
       <h4>Farbschema (hell/dunkel)</h4>
       <ul>
-        <li><strong>Manuell:</strong> Umschalten über den Mond/Sonne-Button oben rechts oder unter Einstellungen.</li>
-        <li><strong>Zeitfenster:</strong> Dunkel automatisch in einem Zeitraum, sonst hell.</li>
-        <li><strong>Wie System/Browser:</strong> Folgt der Einstellung des Geräts.</li>
+        <li><strong>Manuell:</strong> Umschalten über den Mond/Sonne-Button oben rechts oder unter Einstellungen (Standard).</li>
+        <li><strong>Zeitfenster:</strong> Dunkel automatisch in einem Zeitraum (auch über Mitternacht).</li>
+        <li><strong>Wie System/Browser:</strong> Folgt der Geräte-Einstellung.</li>
       </ul>
 
-      <h4>Zeitstrahl</h4>
-      <ul>
-        <li>Zeitraum-Buttons (1 Std bis 7 Tage), − / + zum Zoomen, „◀ zurück“ / „vor ▶“ blättern nur innerhalb der vorhandenen Daten.</li>
-        <li>Balken antippen zeigt Details. Der Zeitstrahl läuft live mit.</li>
-        <li>Zoom- und Blickzustand werden pro Messreihe gemerkt.</li>
-      </ul>
-
-      <h4>Messreihen</h4>
-      <ul>
-        <li>Das Schließen des Browsers beendet keine Messreihe – beim nächsten Öffnen wird fortgeführt.</li>
-        <li>Jede Reihe über „Öffnen“ wird sofort wieder zur aktuellen Messreihe.</li>
-        <li>„Löschen“ entfernt eine Reihe endgültig (mit Bestätigung).</li>
-      </ul>
-
-      <h4>Sicherung</h4>
-      <p>Mit „Sicherung exportieren“ speicherst du alle Daten als JSON-Datei (Notizen, Farbschema, Erinnerungseinstellungen und eigenen Klingelton eingeschlossen), mit „Sicherung importieren“ stellst du sie wieder her.</p>
       <h4>Verwandte Anwendung</h4>
-      <p>Möchtest du auch die Wellen während der Geburt im Blick behalten? Dazu gibt es eine
-      ähnliche Anwendung im gleichen Stil:
-      <a href="https://schrottgott.github.io/wellentracker/" target="_blank" rel="noopener">Wellen-Tracker öffnen ↗</a></p>
-      
+      <p>Du stillst (oder planst es) und möchtest deine Stillzeiten ebenfalls bequem tracken?
+      <a href="https://schrottgott.github.io/stilltracker/" target="_blank" rel="noopener">Still-Tracker öffnen ↗</a></p>
     </div>
   </dialog>
 
   <script>
-    (() => {
+    (function () {
       "use strict";
 
-      const STORAGE_KEY = "still-tracker-data-v3";
-      const LEGACY_KEYS = ["still-tracker-data-v2", "still-tracker-data-v1"];
-      const $ = id => document.getElementById(id);
-      const HOUR = 60 * 60 * 1000;
-      const REM_MAX_TONE_BYTES = 2 * 1024 * 1024; // Rohdaten-Grenze für eigenen Ton
-      const DIM_DELAY_MS = 20000;                 // v23: Untätigkeit, bevor die Seite abdunkelt
-
-      /* ============ Zustand ============ */
-
-      let currentSide = "left";
-      let series = [];
-      let currentId = null;
-      let selectedId = null;
-      let autoSwitch = "on";
-      let theme = { mode: "manual", dark: false, start: "20:00", end: "07:00" };
-
-      let reminder = {
-        enabled: false,
-        mode: "interval",            // fixed | interval | manual
-        times: ["02:00", "06:00"],   // Modus fixed
-        intervalMin: 180,            // Modus interval
-        frameOn: false,              // Zeitrahmen im Intervall-Modus
-        frameStart: "22:00",
-        frameEnd: "06:00",
-        manualMin: 180,              // Default des manuellen Countdowns
-        manualUntil: 0,              // Endzeitpunkt des laufenden Countdowns (0 = bereit)
-        volume: 0.6,
-        tone: "default",             // default | custom
-        customName: "",
-        customData: "",
-        wakeOn: true                 // v23: Wach-Modus (Bildschirm wachhalten)
-      };
-
-      let viewSpanHours = 12;
-      let viewRight = null;
-      let zoomSpanHours = null;
-
-      let tapTargets = [];
-      let openDetail = null;
-
-      // Laufzeit (nicht exportiert)
-      let lastFiredAt = 0;        // letzter Auslösung-Zeitpunkt (Anti-Doppelklingeln)
-      let lastFiredSlot = "";     // Kennung des zuletzt ausgelösten Slots
-      let customAudio = null;     // Audio-Objekt für eigenen Ton
-      let ringNodes = [];    // v23.1: gerade klingende Oszillatoren
-      let ringMaster = null; // v23.1: Sammel-Gain der aktuellen Wiedergabe
-      let alarmRinging = false;   // Alarm klingelt (Schleife) bis quittiert
-      let alarmLoopTimer = null;  // Wiederholungs-Intervall des Alarms
-      let testTimer = null;       // Läuft gerade der Ton-Test?
-
-      // v23: Wach-Modus & Abdunkeln
-      let wakeLock = null;          // aktuell gehaltener Screen Wake Lock
-      let wakeDenied = false;       // Browser hat abgelehnt / nicht unterstützt
-      let wakeRetryAt = 0;          // nächster Versuch, den Lock anzufordern
-      let lastInteraction = Date.now();
-      let wasHiddenWhileArmed = false;
-
-      function showSaveWarning(detail) {
-        const box = $("saveWarning");
+      function showFatal(message) {
+        var box = document.getElementById("fatalError");
+        if (!box) return;
         box.style.display = "block";
-        box.textContent =
-          "Wichtig: Die Daten konnten NICHT dauerhaft gespeichert werden" +
-          (detail ? " (" + detail + ")" : "") +
-          ". Dies kann im privaten/incognito Modus oder bei vollem Speicher passieren. " +
-          "Neue Stillzeiten würden beim Schließen verloren gehen – bitte exportiere deine " +
-          "Daten über „Sicherung exportieren“ und nutze ggf. einen normalen (nicht privaten) Browsermodus.";
+        box.textContent = "Fehler im Wellen-Tracker: " + message;
       }
+      window.addEventListener("error", function (event) {
+        showFatal((event.message || "Unbekannter Fehler") +
+          (event.lineno ? " (Zeile " + event.lineno + ")" : ""));
+      });
 
-      function persistState() {
-        try {
-          const session = activeSeries();
-          if (session) {
-            session.view = {
-              span: viewSpanHours,
-              zoom: zoomSpanHours,
-              rightAgo: viewRight === null ? null : Date.now() - viewRight
-            };
-          }
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            currentSide, series, currentId, autoSwitch, theme, reminder
-          }));
-        } catch (error) {
-          showSaveWarning(error && error.name ? error.name : "unbekannter Fehler");
+      /* ==========================================================
+         Wellen-Tracker v11
+         Entwickelt von SchrottGott — 25.11.2026
+         v11: Export/Import, umkehrbarer Zeitstrahl (Seit Start),
+              Datum/Dauer/Pause/Abstand in den Listen,
+              mehrere benutzerdefinierte Timer mit Stichwort.
+         ========================================================== */
+      var AUTHOR_TAG = "Entwickelt von SchrottGott — Wellen-Tracker v11, 2026-11-25";
+      try { console.info(AUTHOR_TAG); } catch (e) { /* ignoriert */ }
+
+      var STORAGE_KEY = "wellen-tracker-sessions-v2";
+      var OLD_STORAGE_KEY = "wellen-tracker-sessions-v1";
+      var MIN_VIEW = 10 * 1000;
+      var MAX_VIEW = 24 * 60 * 60 * 1000;
+
+      function $(id) { return document.getElementById(id); }
+
+      function lastItem(arr) {
+        return arr && arr.length ? arr[arr.length - 1] : undefined;
+      }
+      function findLastMatch(arr, test) {
+        for (var i = arr.length - 1; i >= 0; i--) {
+          if (test(arr[i], i)) return arr[i];
         }
+        return undefined;
       }
 
-      function scheduleSave() { persistState(); }
+      var canvas = $("graph");
+      var wrap = $("graphWrap");
+      var ctx = canvas.getContext("2d");
+
+      var sessions = [];
+      var currentId = null;
+      var selectedId = null;
+      var viewSpan = 20 * 60 * 1000;
+      var gesture = null;
+      var timeMode = "elapsed";
+      var viewRight = null;
+      var elapsedReversed = false;   /* v11: Zeitstrahl im Modus "Seit Start" umdrehen */
+
+      var lastFirst = 0;
+      var lastRight = 0;
+      var lastCenter = 0;
+      var lastVisibleSpan = viewSpan;
+      var lastDataEnd = 0;
+      var hitTargets = [];
+      var touchStart = null;
+
+      var theme = { mode: "os", dark: false, start: "20:00", end: "07:00" };
+
+      /* v11: Benutzerdefinierte Timer mit Stichwort */
+      var customTimers = [];   /* { id, label, minutes, startedAt, fired, firedAt } */
 
       function makeId() {
-        return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        return Date.now() + "-" + Math.random().toString(36).slice(2, 9);
       }
 
-      function makeSeries() {
-        return { id: makeId(), startedAt: Date.now(), endedAt: null, finished: false, entries: [], view: null };
+      function makeSession() {
+        return {
+          id: makeId(),
+          startedAt: Date.now(),
+          endedAt: null,
+          finished: false,
+          segments: [],
+          events: []
+        };
       }
 
-      function activeSeries() { return series.find(s => s.id === currentId) || null; }
-      function selectedSeries() { return series.find(s => s.id === selectedId) || activeSeries(); }
-      function isCurrentView() { return selectedId === currentId; }
-      function entries(s) { return s ? s.entries || [] : []; }
-      function activeFeed() {
-        return entries(activeSeries()).find(e => e.end === null) || null;
-      }
-
-      function applyViewState(session) {
-        const v = session?.view;
-        if (v && Number.isFinite(v.span) && v.span > 0) {
-          viewSpanHours = v.span;
-          zoomSpanHours = Number.isFinite(v.zoom) && v.zoom > 0 ? v.zoom : null;
-          viewRight = v.rightAgo === null || !Number.isFinite(v.rightAgo)
-            ? null
-            : Math.max(0, Date.now() - v.rightAgo);
-        } else {
-          viewSpanHours = 12;
-          zoomSpanHours = null;
-          viewRight = null;
+      function activeSession() {
+        for (var i = 0; i < sessions.length; i++) {
+          if (sessions[i].id === currentId) return sessions[i];
         }
-        syncSpanButtons();
+        return null;
       }
 
-      function syncSpanButtons() {
-        const matched = zoomSpanHours === null;
-        document.querySelectorAll(".span-button").forEach(b => {
-          b.classList.toggle("active", matched && Number(b.dataset.span) === viewSpanHours);
+      function selectedSession() {
+        for (var i = 0; i < sessions.length; i++) {
+          if (sessions[i].id === selectedId) return sessions[i];
+        }
+        return activeSession();
+      }
+
+      function isCurrentView() {
+        return selectedId === currentId;
+      }
+
+      /* ============ Session-Bereinigung (auch für Import) ============ */
+
+      function cleanSession(raw) {
+        if (!raw || typeof raw.id !== "string" || !raw.segments || !raw.segments.length) return null;
+        var cleanSegments = [];
+        for (var j = 0; j < raw.segments.length; j++) {
+          var seg = raw.segments[j];
+          if (seg && (seg.type === "wave" || seg.type === "pause") &&
+              typeof seg.start === "number" &&
+              (seg.end === null || typeof seg.end === "number")) {
+            cleanSegments.push({ type: seg.type, start: seg.start, end: seg.end });
+          }
+        }
+        if (!cleanSegments.length) return null;
+        var cleanEvents = [];
+        if (raw.events && raw.events.length) {
+          for (var k = 0; k < raw.events.length; k++) {
+            var ev = raw.events[k];
+            if (ev && (ev.type === "water" || ev.type === "note") &&
+                typeof ev.at === "number") {
+              cleanEvents.push({
+                type: ev.type, at: ev.at,
+                text: typeof ev.text === "string" ? ev.text : ""
+              });
+            }
+          }
+        }
+        return {
+          id: raw.id,
+          startedAt: typeof raw.startedAt === "number" ? raw.startedAt : cleanSegments[0].start,
+          endedAt: typeof raw.endedAt === "number" ? raw.endedAt : null,
+          finished: !!raw.finished,
+          segments: cleanSegments,
+          events: cleanEvents
+        };
+      }
+
+      function cleanTimers(raw) {
+        var out = [];
+        if (!raw || !raw.length) return out;
+        for (var i = 0; i < raw.length; i++) {
+          var t = raw[i];
+          if (t && typeof t.id === "string" && typeof t.minutes === "number" &&
+              t.minutes > 0 && typeof t.startedAt === "number") {
+            out.push({
+              id: t.id,
+              label: typeof t.label === "string" ? t.label : "",
+              minutes: t.minutes,
+              startedAt: t.startedAt,
+              fired: !!t.fired,
+              firedAt: typeof t.firedAt === "number" ? t.firedAt : null
+            });
+          }
+        }
+        return out;
+      }
+
+      function load() {
+        try {
+          var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+
+          if (saved && saved.sessions && saved.sessions.length) {
+            sessions = [];
+            for (var i = 0; i < saved.sessions.length; i++) {
+              var clean = cleanSession(saved.sessions[i]);
+              if (clean) sessions.push(clean);
+            }
+            currentId = saved.currentId;
+            var found = false;
+            for (var m = 0; m < sessions.length; m++) {
+              if (sessions[m].id === currentId) { found = true; break; }
+            }
+            if (!found) currentId = null;
+            loadTheme(saved.theme);
+            customTimers = cleanTimers(saved.customTimers);
+          } else {
+            /* Migration von v10 ("sessions-v1") bzw. Vorversion. */
+            var old = JSON.parse(localStorage.getItem(OLD_STORAGE_KEY) || "null");
+            if (old && old.sessions && old.sessions.length) {
+              sessions = [];
+              for (var p = 0; p < old.sessions.length; p++) {
+                var oldClean = cleanSession(old.sessions[p]);
+                if (oldClean) sessions.push(oldClean);
+              }
+              currentId = typeof old.currentId === "string" ? old.currentId : null;
+              var foundOld = false;
+              for (var q = 0; q < sessions.length; q++) {
+                if (sessions[q].id === currentId) { foundOld = true; break; }
+              }
+              if (!foundOld) currentId = null;
+              if (old.theme) loadTheme(old.theme);
+            }
+          }
+        } catch (err) {
+          sessions = [];
+          currentId = null;
+        }
+
+        if (!activeSession()) {
+          var fresh = makeSession();
+          sessions.push(fresh);
+          currentId = fresh.id;
+        }
+
+        selectedId = currentId;
+        save();
+      }
+
+      function save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            sessions: sessions,
+            currentId: currentId,
+            theme: theme,
+            customTimers: customTimers
+          }));
+        } catch (err) {
+          $("hint").textContent = "Der Browser konnte die Messung nicht speichern.";
+        }
+      }
+
+      function closeOpenSegment(session, at) {
+        if (!session) return;
+        var open = findLastMatch(session.segments, function (segment) {
+          return segment.end === null;
         });
+        if (open) open.end = at;
       }
-
-      /* ============ Formatierung ============ */
 
       function fmt(ms) {
-        if (!Number.isFinite(ms) || ms < 0) return "—";
-        const sec = Math.floor(ms / 1000);
-        return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
-      }
-
-      function fmtDurationLong(ms) {
-        if (!Number.isFinite(ms) || ms < 0) return "—";
-        const sec = Math.floor(ms / 1000);
-        const h = Math.floor(sec / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const s = sec % 60;
-        if (h > 0) return `${h} Std. ${String(m).padStart(2, "0")} Min.`;
-        if (m > 0) return `${m}:${String(s).padStart(2, "0")} Min.`;
-        return `${s} Sek.`;
-      }
-
-      function timeOfDay(ts) {
-        return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      }
-
-      function dayLabel(ts) {
-        return new Date(ts).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+        if (!isFinite(ms) || ms < 0) return "—";
+        var sec = Math.floor(ms / 1000);
+        var min = Math.floor(sec / 60);
+        var rem = sec % 60;
+        return (min < 10 ? "0" : "") + min + ":" + (rem < 10 ? "0" : "") + rem;
       }
 
       function dateTime(ts) {
@@ -1051,55 +833,96 @@
         });
       }
 
-      function agoText(ts, now) {
-        const minutes = Math.max(0, Math.round((now - ts) / 60000));
-        if (minutes < 1) return "gerade eben";
-        if (minutes < 60) return `vor ${minutes} Min.`;
-        const hours = Math.floor(minutes / 60);
-        const rest = minutes % 60;
-        if (hours < 24) return rest ? `vor ${hours} Std. ${rest} Min.` : `vor ${hours} Std.`;
-        const days = Math.floor(hours / 24);
-        return `vor ${days} Tag${days === 1 ? "" : "en"}`;
+      function timeOfDay(ts) {
+        return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       }
 
-      function isSameDay(a, b) {
-        const da = new Date(a), db = new Date(b);
-        return da.getFullYear() === db.getFullYear() &&
-               da.getMonth() === db.getMonth() &&
-               da.getDate() === db.getDate();
+      /* v11: Datum inkl. Wochentag für die Listen */
+      function dayLabel(ts) {
+        return new Date(ts).toLocaleDateString([], {
+          weekday: "short", year: "numeric", month: "short", day: "numeric"
+        });
+      }
+
+      function agoLabel(ms) {
+        if (!isFinite(ms) || ms < 0) return "";
+        var sec = Math.floor(ms / 1000);
+        if (sec < 60) return "gerade eben";
+        var min = Math.floor(sec / 60);
+        if (min < 60) return "vor " + min + " min";
+        var h = Math.floor(min / 60);
+        return "vor " + h + " h " + (min % 60 < 10 ? "0" : "") + (min % 60) + " min";
+      }
+
+      function waves(session) {
+        if (!session) return [];
+        return session.segments.filter(function (s) { return s.type === "wave"; });
+      }
+
+      function pauses(session) {
+        if (!session) return [];
+        return session.segments.filter(function (s) { return s.type === "pause"; });
+      }
+
+      function waterEvents(session) {
+        if (!session) return [];
+        return session.events.filter(function (e) { return e.type === "water"; });
+      }
+
+      function noteEvents(session) {
+        if (!session) return [];
+        return session.events.filter(function (e) { return e.type === "note"; });
+      }
+
+      function duration(segment, now) {
+        var end = segment.end === null || segment.end === undefined ? now : segment.end;
+        return Math.max(0, end - segment.start);
+      }
+
+      function average(values) {
+        if (!values.length) return null;
+        var sum = 0;
+        for (var i = 0; i < values.length; i++) sum += values[i];
+        return sum / values.length;
+      }
+
+      /* v11: Pause direkt nach einer Welle (Index in Wellenliste) */
+      function pauseAfterWave(session, wave) {
+        var waveEnd = wave.end === null || wave.end === undefined ? null : wave.end;
+        if (waveEnd === null) return null;
+        return findLastMatch(session.segments, function (seg) {
+          return seg.type === "pause" && seg.start === waveEnd;
+        }) || null;
       }
 
       function escapeHtml(text) {
         return String(text)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;");
+          .split("&").join("&amp;")
+          .split("<").join("&lt;")
+          .split(">").join("&gt;");
       }
 
-      /* ============ Theme ============ */
+      /* ===================== Theme ===================== */
 
-      const LIGHT_THEME_COLOR = "#f6eee7";
-      const DARK_THEME_COLOR = "#1c1714";
+      var LIGHT_THEME_COLOR = "#f6eee7";
+      var DARK_THEME_COLOR = "#1c1714";
 
       function minutesOf(hhmm) {
-        const parts = String(hhmm || "").split(":");
-        const h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
-        if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+        var parts = String(hhmm || "").split(":");
+        var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+        if (!isFinite(h) || !isFinite(m)) return null;
         return h * 60 + m;
       }
 
-      function inMinuteWindow(nowMin, startHHMM, endHHMM) {
-        const s = minutesOf(startHHMM), e = minutesOf(endHHMM);
-        if (s === null || e === null || s === e) return false;
-        return s < e ? (nowMin >= s && nowMin < e) : (nowMin >= s || nowMin < e);
-      }
-
       function inWindow(now) {
-        const d = now || new Date();
-        return inMinuteWindow(d.getHours() * 60 + d.getMinutes(), theme.start, theme.end);
+        var cur = now.getHours() * 60 + now.getMinutes();
+        var s = minutesOf(theme.start), e = minutesOf(theme.end);
+        if (s === null || e === null || s === e) return false;
+        return s < e ? (cur >= s && cur < e) : (cur >= s || cur < e);
       }
 
-      const osDarkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+      var osDarkQuery = window.matchMedia
+        ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
       function themeShouldBeDark(now) {
         if (theme.mode === "os") return osDarkQuery ? osDarkQuery.matches : false;
@@ -1107,1613 +930,1053 @@
         return theme.dark;
       }
 
+      function loadTheme(raw) {
+        if (!raw || typeof raw !== "object") return;
+        if (raw.mode === "manual" || raw.mode === "window" || raw.mode === "os") {
+          theme.mode = raw.mode;
+        }
+        theme.dark = !!raw.dark;
+        if (typeof raw.start === "string" && /^\d{2}:\d{2}$/.test(raw.start)) theme.start = raw.start;
+        if (typeof raw.end === "string" && /^\d{2}:\d{2}$/.test(raw.end)) theme.end = raw.end;
+      }
+
       function applyTheme(forceRedraw) {
-        const dark = themeShouldBeDark(new Date());
+        var dark = themeShouldBeDark(new Date());
         document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
         $("metaThemeColor").setAttribute("content", dark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
         $("themeQuick").textContent = dark ? "☀️" : "🌙";
         $("themeQuick").title = dark ? "Helles Design aktivieren" : "Dunkles Design aktivieren";
-        if (forceRedraw) drawTimeline(Date.now());
+        if (forceRedraw) drawGraph(Date.now());
       }
 
       function setThemeMode(mode) {
         theme.mode = mode;
-        if (mode === "manual") theme.dark = document.documentElement.getAttribute("data-theme") === "dark";
+        if (mode === "manual") {
+          theme.dark = document.documentElement.getAttribute("data-theme") === "dark";
+        }
         $("themeMode").value = mode;
         $("themeWindowRow").hidden = mode !== "window";
         applyTheme(true);
-        scheduleSave();
+        save();
       }
 
-      $("themeQuick").addEventListener("click", () => {
-        const dark = document.documentElement.getAttribute("data-theme") === "dark";
+      $("themeQuick").addEventListener("click", function () {
+        var dark = document.documentElement.getAttribute("data-theme") === "dark";
         theme.mode = "manual";
         theme.dark = !dark;
         $("themeMode").value = "manual";
         $("themeWindowRow").hidden = true;
         applyTheme(true);
-        scheduleSave();
+        save();
       });
 
-      $("themeMode").addEventListener("change", () => setThemeMode($("themeMode").value));
-      $("themeStart").addEventListener("change", () => { theme.start = $("themeStart").value; applyTheme(true); scheduleSave(); });
-      $("themeEnd").addEventListener("change", () => { theme.end = $("themeEnd").value; applyTheme(true); scheduleSave(); });
+      $("themeMode").addEventListener("change", function () { setThemeMode($("themeMode").value); });
+      $("themeStart").addEventListener("change", function () {
+        theme.start = $("themeStart").value; applyTheme(true); save();
+      });
+      $("themeEnd").addEventListener("change", function () {
+        theme.end = $("themeEnd").value; applyTheme(true); save();
+      });
       if (osDarkQuery) {
-        const handler = () => { if (theme.mode === "os") applyTheme(true); };
-        if (osDarkQuery.addEventListener) osDarkQuery.addEventListener("change", handler);
-        else if (osDarkQuery.addListener) osDarkQuery.addListener(handler);
+        var osHandler = function () { if (theme.mode === "os") applyTheme(true); };
+        if (osDarkQuery.addEventListener) osDarkQuery.addEventListener("change", osHandler);
+        else if (osDarkQuery.addListener) osDarkQuery.addListener(osHandler);
       }
 
-      /* ============ Notizen ============ */
+      /* ===================== Render: Kopf ===================== */
 
-      function promptNote(entry) {
-        if (!entry) return;
-        const when = `${dayLabel(entry.start)} ${timeOfDay(entry.start)} Uhr, ${entry.side === "left" ? "links" : "rechts"}`;
-        const input = prompt(
-          `Notiz zur Stillzeit (${when}):\n(Leer lassen und OK = Notiz löschen)`,
-          entry.note || ""
-        );
-        if (input === null) return;
-        entry.note = input.trim();
-        scheduleSave();
-        renderFeed(Date.now());
-      }
+      function renderCurrent(now) {
+        var session = selectedSession();
+        var currentView = isCurrentView();
+        var segments = session ? session.segments : [];
+        var active = findLastMatch(segments, function (s) { return s.end === null; });
+        var isWave = currentView && active && active.type === "wave";
+        var isPause = currentView && active && active.type === "pause";
+        var sessionFinished = currentView && !!(session && session.finished);
 
-      /* ============ Laden & Migration ============ */
+        $("sessionDate").textContent = session
+          ? dayLabel(session.startedAt) + " · " + timeOfDay(session.startedAt) + " Uhr" +
+            (session.endedAt ? " · beendet: " + dateTime(session.endedAt) : "")
+          : "";
 
-      function sanitizeEntry(e) {
-        if (!e || (e.side !== "left" && e.side !== "right")) return null;
-        if (!Number.isFinite(e.start)) return null;
-        if (e.end !== null && !Number.isFinite(e.end)) return null;
-        return {
-          side: e.side, start: e.start, end: e.end,
-          note: typeof e.note === "string" ? e.note : ""
-        };
-      }
+        $("viewingBanner").hidden = currentView;
+        $("viewingBanner").textContent = currentView
+          ? ""
+          : "Du siehst eine gespeicherte Messung. Sie kann hier nicht verändert werden.";
 
-      function normalizeSessions(rawSessions, currentIdRaw) {
-        const sessions = (rawSessions || [])
-          .filter(s => s && typeof s.id === "string")
-          .map(s => ({
-            id: s.id,
-            startedAt: Number.isFinite(s.startedAt) ? s.startedAt : Date.now(),
-            endedAt: Number.isFinite(s.endedAt) ? s.endedAt : null,
-            finished: Boolean(s.finished),
-            view: s.view || null,
-            entries: (Array.isArray(s.entries) ? s.entries : []).map(sanitizeEntry).filter(Boolean)
-          }));
-        let current = currentIdRaw;
-        if (!sessions.some(s => s.id === current)) current = null;
-        return { sessions, current };
-      }
+        $("phase").textContent = !currentView
+          ? (session && session.finished ? "Messung beendet" : "Gespeicherte Messung")
+          : isWave
+            ? "Welle läuft"
+            : isPause
+              ? "Wellenpause"
+              : sessionFinished
+                ? "Messung beendet – fortsetzbar"
+                : "Bereit";
 
-      function loadTheme(raw) {
-        if (!raw || typeof raw !== "object") return;
-        if (["manual", "window", "os"].includes(raw.mode)) theme.mode = raw.mode;
-        theme.dark = Boolean(raw.dark);
-        if (typeof raw.start === "string" && /^\d{2}:\d{2}$/.test(raw.start)) theme.start = raw.start;
-        if (typeof raw.end === "string" && /^\d{2}:\d{2}$/.test(raw.end)) theme.end = raw.end;
-      }
+        $("timer").textContent = isWave ? fmt(now - active.start) : "00:00";
 
-      function loadReminder(raw) {
-        if (!raw || typeof raw !== "object") return;
-        if (["fixed", "interval", "manual"].includes(raw.mode)) reminder.mode = raw.mode;
-        reminder.enabled = Boolean(raw.enabled);
-        if (Array.isArray(raw.times)) {
-          reminder.times = raw.times.filter(t => typeof t === "string" && /^\d{2}:\d{2}$/.test(t)).slice(0, 24);
+        var toggle = $("toggle");
+        toggle.disabled = false;
+        toggle.textContent = isWave
+          ? "Welle beenden"
+          : isPause
+            ? "Nächste Welle starten"
+            : "Welle starten";
+
+        toggle.classList.toggle("pause-mode", isPause);
+        $("hint").textContent = !currentView
+          ? "Wechsle zurück zur aktuellen Messung, um weiter aufzuzeichnen."
+          : isWave
+            ? "Tippe am Ende der Welle erneut."
+            : isPause
+              ? "Der Timer steht während der Pause. Tippe beim Beginn der nächsten Welle."
+              : sessionFinished
+                ? "Diese Messung war beendet – tippe „Welle starten“, um sie fortzusetzen. Die Zwischenzeit bleibt frei."
+                : "Tippe beim Beginn einer Welle auf den Knopf.";
+
+        $("finishSession").disabled = !currentView || sessionFinished;
+        $("finishSession").textContent = sessionFinished ? "Messung beendet" : "Messung beenden";
+        $("returnCurrent").hidden = currentView;
+
+        var waterButton = $("addWater");
+        waterButton.disabled = !currentView || sessionFinished;
+        waterButton.textContent = sessionFinished && currentView
+          ? "Messung beendet"
+          : "Blasensprung dokumentieren";
+        $("noteText").disabled = !currentView || sessionFinished;
+        $("addNote").disabled = !currentView || sessionFinished;
+
+        var ws = waves(session);
+        var ps = pauses(session);
+        var lastWave = lastItem(ws);
+        var lastPause = lastItem(ps);
+        var interval = null;
+        if (ws.length >= 2) interval = ws[ws.length - 1].start - ws[ws.length - 2].start;
+
+        $("lastWave").textContent = lastWave ? fmt(duration(lastWave, now)) : "—";
+        $("lastPause").textContent = lastPause ? fmt(duration(lastPause, now)) : "—";
+        $("lastInterval").textContent = interval === null ? "—" : fmt(interval);
+
+        var lastWater = lastItem(waterEvents(session));
+        var waterStatus = $("waterStatus");
+        if (lastWater) {
+          waterStatus.hidden = false;
+          waterStatus.textContent = "Blasensprung: " + timeOfDay(lastWater.at) +
+            " Uhr · " + agoLabel(now - lastWater.at);
+        } else {
+          waterStatus.hidden = true;
         }
-        if (Number.isFinite(raw.intervalMin)) reminder.intervalMin = Math.min(720, Math.max(1, Math.round(raw.intervalMin)));
-        if (Number.isFinite(raw.manualMin)) reminder.manualMin = Math.min(720, Math.max(1, Math.round(raw.manualMin)));
-        if (Number.isFinite(raw.volume)) reminder.volume = Math.min(1, Math.max(0, raw.volume));
-        if (raw.tone === "default" || raw.tone === "custom") reminder.tone = raw.tone;
-        reminder.customName = typeof raw.customName === "string" ? raw.customName : "";
-        reminder.customData = typeof raw.customData === "string" && raw.customData.startsWith("data:audio") ? raw.customData : "";
-        reminder.frameOn = Boolean(raw.frameOn);
-        if (typeof raw.frameStart === "string" && /^\d{2}:\d{2}$/.test(raw.frameStart)) reminder.frameStart = raw.frameStart;
-        if (typeof raw.frameEnd === "string" && /^\d{2}:\d{2}$/.test(raw.frameEnd)) reminder.frameEnd = raw.frameEnd;
-        reminder.manualUntil = Number.isFinite(raw.manualUntil) ? raw.manualUntil : 0;
-        reminder.wakeOn = raw.wakeOn !== false;   // v23: Standard an, ältere Daten kompatibel
+
+        renderAverages(session, now);
       }
 
-      function loadAll() {
-        let data = null;
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) data = JSON.parse(raw);
-        } catch { data = null; }
+      function renderAverages(session, now) {
+        if (!session) {
+          $("avgWave").textContent = "—";
+          $("avgPause").textContent = "—";
+          $("avgInterval").textContent = "—";
+          return;
+        }
 
-        if (!data || !Array.isArray(data.series)) {
-          for (const key of LEGACY_KEYS) {
-            try {
-              const legacy = JSON.parse(localStorage.getItem(key) || "null");
-              if (legacy && Array.isArray(legacy.series)) {
-                const first = legacy.series[0];
-                const migrated = first?.entries?.map(e => sanitizeEntry({
-                  side: e.side, start: e.start, end: e.end
-                })).filter(Boolean) || [];
-                data = {
-                  series: [{ id: makeId(), startedAt: Date.now(), endedAt: null, finished: false, entries: [], view: null }],
-                  currentId: null
-                };
-                data.series[0].entries = migrated;
-                if (legacy.currentSide) currentSide = legacy.currentSide;
-                if (legacy.autoSwitch === "off") autoSwitch = "off";
-                loadTheme(legacy.theme);
-                break;
-              }
-            } catch { /* weiter */ }
+        var windowMs = Number($("averageWindow").value) * 60 * 1000;
+        var from = now - windowMs;
+        var ws = waves(session);
+        var ps = pauses(session);
+
+        var waveValues = [];
+        var pauseValues = [];
+        var intervalValues = [];
+
+        for (var i = 0; i < ws.length; i++) {
+          if (ws[i].start >= from && ws[i].end !== null && ws[i].end !== undefined) {
+            waveValues.push(duration(ws[i], now));
           }
         }
-
-        if (data && Array.isArray(data.series)) {
-          if (data.currentSide === "left" || data.currentSide === "right") {
-            currentSide = data.currentSide;
+        for (var j = 0; j < ps.length; j++) {
+          if (ps[j].start >= from && ps[j].end !== null && ps[j].end !== undefined) {
+            pauseValues.push(duration(ps[j], now));
           }
-          if (data.autoSwitch === "off") autoSwitch = "off";
-          loadTheme(data.theme);
-          loadReminder(data.reminder);
-          const norm = normalizeSessions(data.series, data.currentId);
-          series = norm.sessions;
-          currentId = norm.current;
+        }
+        for (var k = 1; k < ws.length; k++) {
+          if (ws[k].start >= from) intervalValues.push(ws[k].start - ws[k - 1].start);
         }
 
-        if (!activeSeries()) {
-          const fresh = makeSeries();
-          series.push(fresh);
-          currentId = fresh.id;
+        var avgWave = average(waveValues);
+        var avgPause = average(pauseValues);
+        var avgInterval = average(intervalValues);
+
+        $("avgWave").textContent = avgWave === null ? "—" : fmt(avgWave);
+        $("avgPause").textContent = avgPause === null ? "—" : fmt(avgPause);
+        $("avgInterval").textContent = avgInterval === null ? "—" : fmt(avgInterval);
+      }
+
+      /* ===================== Render: Wellendaten-Liste ===================== */
+
+      function renderList(session, now) {
+        var list = $("recordsList");
+        var ws = waves(session);
+        var water = waterEvents(session);
+        var notes = noteEvents(session);
+        var editable = isCurrentView() && !(session && session.finished);
+
+        var summary = "Wellendaten anzeigen (" + ws.length;
+        if (water.length) summary += " · " + water.length + " " + (water.length > 1 ? "Blasensprünge" : "Blasensprung");
+        if (notes.length) summary += " · " + notes.length + " Notiz" + (notes.length > 1 ? "en" : "");
+        summary += ")";
+        $("recordsSummary").textContent = summary;
+
+        if (!ws.length && !water.length && !notes.length) {
+          list.innerHTML = '<div class="empty">Noch keine Wellen aufgezeichnet.</div>';
+          return;
         }
 
-        selectedId = currentId;
-        $("autoSwitch").value = autoSwitch;
-        $("themeMode").value = theme.mode;
-        $("themeStart").value = theme.start;
-        $("themeEnd").value = theme.end;
-        $("themeWindowRow").hidden = theme.mode !== "window";
-
-        syncReminderUI();
-        applyViewState(activeSeries());
-        applyTheme(false);
-        persistState();
-      }
-
-      /* ================================================================
-         ERINNERUNGSFUNKTION
-         ================================================================ */
-
-      /* --- Klang: Standard = Spieldosen-Variante von Brahms' Wiegenlied --- */
-
-      const LULLABY = [
-        // [MIDI-Note, Startschlag, Dauer in Schlägen] – erste Zeilen, ruhig
-        [64, 0.0, 1.0], [64, 1.0, 1.0], [67, 2.0, 2.0],   // Gu-ten A-bend
-        [67, 4.0, 1.0], [65, 5.0, 1.0], [64, 6.0, 2.0],   // gut' Nacht
-        [62, 8.0, 1.0], [64, 9.0, 1.0], [65, 10.0, 2.0],  // mit Ro-sen
-        [64, 12.0, 1.0], [62, 13.0, 1.0], [60, 14.0, 3.0]  // be-dacht
-      ];
-
-      function midiToFreq(note) {
-        return 440 * Math.pow(2, (note - 69) / 12);
-      }
-
-      let audioCtx = null;
-
-      function ensureAudioCtx() {
-        if (!audioCtx) {
-          const AC = window.AudioContext || window.webkitAudioContext;
-          if (!AC) return null;
-          audioCtx = new AC();
+        var items = [];
+        for (var i = 0; i < ws.length; i++) {
+          items.push({ kind: "wave", at: ws[i].start, wave: ws[i], num: i + 1 });
         }
-        if (audioCtx.state === "suspended") audioCtx.resume();
-        return audioCtx;
-      }
-
-      function playLullaby(volume) {
-        const ctxA = ensureAudioCtx();
-        if (!ctxA) return;
-        if (ringMaster) { try { ringMaster.disconnect(); } catch { /* egal */ } }
-        ringNodes = [];
-        ringMaster = ctxA.createGain();
-        ringMaster.gain.value = volume;
-        ringMaster.connect(ctxA.destination);
-        const beat = 0.42;             // Dauer eines Schlags (Sekunden) – ruhig
-        const t0 = ctxA.currentTime + 0.05;
-        for (const [note, start, len] of LULLABY) {
-          const t = t0 + start * beat;
-          const dur = len * beat;
-
-          const osc = ctxA.createOscillator();
-          osc.type = "sine";
-          osc.frequency.value = midiToFreq(note);
-
-          const overtone = ctxA.createOscillator();
-          overtone.type = "sine";
-          overtone.frequency.value = midiToFreq(note) * 4;
-
-          const gain = ctxA.createGain();
-          const gainOver = ctxA.createGain();
-
-          gain.gain.setValueAtTime(0.0001, t);
-          gain.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + dur * 1.6);
-          gainOver.gain.value = 0.06;
-
-          osc.connect(gain).connect(ringMaster);
-          overtone.connect(gainOver).connect(ringMaster);
-
-          osc.start(t); osc.stop(t + dur * 1.7);
-          overtone.start(t); overtone.stop(t + dur * 1.7);
-          ringNodes.push(osc, overtone);
+        for (var j = 0; j < water.length; j++) {
+          items.push({ kind: "water", at: water[j].at, event: water[j], num: j + 1 });
         }
-      }
-
-      function playReminderSound() {
-        const vol = reminder.volume;
-        if (reminder.tone === "custom" && reminder.customData) {
-          try {
-            if (customAudio) { customAudio.pause(); customAudio = null; }
-            customAudio = new Audio(reminder.customData);
-            customAudio.volume = vol;
-            customAudio.play().catch(() => {});
-          } catch { /* ignorieren */ }
-        } else {
-          playLullaby(vol);
+        for (var k = 0; k < notes.length; k++) {
+          items.push({ kind: "note", at: notes[k].at, event: notes[k], num: k + 1 });
         }
-        try {
-          if (navigator.vibrate) navigator.vibrate([300, 200, 300]);
-        } catch { /* ignorieren */ }
-      }
+        items.sort(function (a, b) { return b.at - a.at; });
 
-      /* --- Alarm-Schleife: klingelt bis zum Quittieren --- */
+        var html = "";
+        for (var n = 0; n < items.length; n++) {
+          var item = items[n];
+          var time = timeOfDay(item.at);
+          var day = dayLabel(item.at);
 
-      function startAlarm() {
-        undim();
-        ensureAudioCtx();
-        playReminderSound();
-        alarmRinging = true;
-        if (alarmLoopTimer) { clearInterval(alarmLoopTimer); alarmLoopTimer = null; }
-        if (reminder.tone === "custom" && reminder.customData) {
-          // v25: eigener Ton läuft ganz durch – Neustart erst, wenn die
-          // Datei zu Ende ist (Geprüft alle 3 s)
-          alarmLoopTimer = setInterval(() => {
-            if (!alarmRinging) return;
-            if (customAudio && !customAudio.paused && customAudio.duration &&
-                customAudio.currentTime < customAudio.duration - 0.2) return;
-            playReminderSound();
-          }, 3000);
-        } else {
-          // Wiegenlied dauert ca. 8–9 s → alle 11 s erneut
-          alarmLoopTimer = setInterval(() => { if (alarmRinging) playReminderSound(); }, 11000);
-        }
-      }
+          if (item.kind === "wave") {
+            /* v11: Datum, Dauer, Pause danach, Abstand */
+            var running = item.wave.end === null || item.wave.end === undefined;
+            var length = running ? "läuft" : fmt(item.wave.end - item.wave.start);
 
-      function stopAllSound() {
-        for (const node of ringNodes) {
-          try { node.stop(); } catch { /* bereits gestoppt */ }
-        }
-        ringNodes = [];
-        if (ringMaster) {
-          try {
-            ringMaster.gain.cancelScheduledValues(audioCtx.currentTime);
-            ringMaster.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            ringMaster.disconnect();
-          } catch { /* egal */ }
-          ringMaster = null;
-        }
-        if (customAudio) { customAudio.pause(); customAudio = null; }
-        try { if (navigator.vibrate) navigator.vibrate(0); } catch { /* egal */ }
-      }
+            var pauseInfo = null;
+            var intervalInfo = null;
+            if (item.num > 1) {
+              var prev = ws[item.num - 2];
+              intervalInfo = item.wave.start - prev.start;
+            }
+            var nextPause = pauseAfterWave(session, item.wave);
+            if (nextPause) pauseInfo = duration(nextPause, now);
 
-      function stopAlarm() {
-        alarmRinging = false;
-        if (alarmLoopTimer) { clearInterval(alarmLoopTimer); alarmLoopTimer = null; }
-        stopAllSound();
-      }
+            var details = "Dauer: " + length;
+            if (pauseInfo !== null) details += " · Pause danach: " + fmt(pauseInfo);
+            if (intervalInfo !== null) details += " · Abstand: " + fmt(intervalInfo);
 
-      /* --- v23: Wach-Modus (Screen Wake Lock) + Abdunkeln --- */
-
-      function wakeSupported() {
-        return "wakeLock" in navigator;
-      }
-
-      function wakeWanted(now) {
-        // Nur wenn Erinnerung aktiviert UND wir uns im relevanten
-        // Zeitrahmen befinden (ohne Rahmen: immer, solange aktiv).
-        return reminder.enabled && reminder.wakeOn &&
-               (reminder.mode !== "interval" || !reminder.frameOn || inRemFrame(now));
-      }
-
-      async function requestWakeLock() {
-        if (!wakeSupported()) { wakeDenied = true; return; }
-        try {
-          wakeLock = await navigator.wakeLock.request("screen");
-          wakeDenied = false;
-          $("remWakeStatus").textContent =
-            "Wach-Modus aktiv – der Bildschirm bleibt an, solange die Erinnerung im Rahmen liegt.";
-          wakeLock.addEventListener("release", () => {
-            if (wakeLock) { wakeLock = null; updateWakeLock(); }
-          });
-        } catch (error) {
-          // ABGELEHNT vom Nutzer oder vom System (z. B. Energiesparmodus)
-          wakeDenied = true;
-          wakeRetryAt = Date.now() + 5 * 60 * 1000;   // erst später erneut versuchen
-          if (error && error.name === "NotAllowedError") {
-            $("remWakeStatus").textContent =
-              "Wach-Modus wurde abgelehnt (Browser-Frage mit „Zulassen“ beantworten oder Energiesparmodus prüfen). Bei ausgeschaltetem Bildschirm klingelt die Erinnerung erst nach dem Aufwecken.";
+            html +=
+              '<div class="wave-row">' +
+                '<div class="wave-info">' +
+                  '<div class="wave-title">Welle ' + item.num + ' · ' + day + ' · ' + time + ' Uhr</div>' +
+                  '<div class="wave-detail">' + details + '</div>' +
+                '</div>' +
+                (editable
+                  ? '<button class="delete-button" type="button" data-delete-wave="' + item.wave.start + '">Löschen</button>'
+                  : "") +
+              '</div>';
+          } else if (item.kind === "water") {
+            html +=
+              '<div class="wave-row water-row">' +
+                '<div class="wave-info">' +
+                  '<div class="wave-title">Blasensprung · ' + day + ' · ' + time + ' Uhr</div>' +
+                  '<div class="wave-detail">' + agoLabel(now - item.at) + '</div>' +
+                '</div>' +
+                (editable
+                  ? '<button class="delete-button water-delete" type="button" data-delete-water="' + item.at + '">Löschen</button>'
+                  : "") +
+              '</div>';
           } else {
-            $("remWakeStatus").textContent =
-              "Wach-Modus derzeit nicht möglich (" + (error?.name || "Fehler") + ").";
+            html +=
+              '<div class="wave-row note-row">' +
+                '<div class="wave-info">' +
+                  '<div class="wave-title">Notiz N' + item.num + ' · ' + day + ' · ' + time + ' Uhr</div>' +
+                  '<div class="wave-detail note-text">' + escapeHtml(item.event.text) + '</div>' +
+                '</div>' +
+                (editable
+                  ? '<button class="delete-button" type="button" data-delete-note="' + item.at + '">Löschen</button>'
+                  : "") +
+              '</div>';
           }
         }
-      }
 
-      function releaseWakeLock() {
-        if (wakeLock) {
-          try { wakeLock.release(); } catch { /* ignorieren */ }
-          wakeLock = null;
-        }
-      }
+        list.innerHTML = html;
 
-      // Zentrale Schaltstelle: hält Lock, wenn gewünscht, gibt ihn frei, wenn nicht
-      function updateWakeLock() {
-        if (document.visibilityState !== "visible") return;
-        if (wakeWanted(new Date())) {
-          if (!wakeLock && !wakeDenied && Date.now() >= wakeRetryAt) requestWakeLock();
-        } else {
-          releaseWakeLock();
-          $("remWakeStatus").textContent = wakeSupported()
-            ? "Wach-Modus aktuell ausserhalb des Erinnerungs-Zeitrahmens (spart Akku)."
-            : "Dieser Browser unterstützt den Wach-Modus leider nicht.";
-        }
-      }
-
-      /* --- Abdunkeln nach Untätigkeit (nur im Wach-Modus) --- */
-
-      function wakeActiveDimming() {
-        return wakeLock !== null || (wakeWanted(new Date()) && wakeSupported() && !wakeDenied);
-      }
-
-      function undim() {
-        lastInteraction = Date.now();
-        document.body.classList.remove("screen-dim");
-        dimGuardOff();
-      }
-
-      // v24: Abgedunkelter Zustand – erste Berührung hellt NUR auf.
-      // Entscheidend: Der "click", der am Ende derselben Touch-Geste ankommt,
-      // muss ebenfalls geschluckt werden (bis dahin ist die Seite schon
-      // wieder hell) – genau das war der Grund für die aktivierten Buttons.
-      const shield = $("dimShield");
-
-      function isDimmed() {
-        return document.body.classList.contains("screen-dim");
-      }
-      function dimGuardOn() { if (shield) shield.hidden = false; }
-      function dimGuardOff() { if (shield) shield.hidden = true; }
-
-      let wokeFromDimAt = 0;   // Zeitpunkt des Aufhellens aus dem Dunkelzustand
-
-      function dimIntercept(event) {
-        if (isDimmed()) {
-          wokeFromDimAt = Date.now();
-          event.preventDefault();
-          event.stopPropagation();
-          undim();
-          return;
-        }
-        // Rest-Klicks einer Geste, die im Dunkelzustand begann, verwerfen
-        if (event.type === "click" && Date.now() - wokeFromDimAt < 500) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      }
-
-      // Capture-Phase: läuft VOR allen Listenern der App-Elemente
-      ["pointerdown", "pointermove", "touchstart", "click", "keydown"]
-        .forEach(evt => window.addEventListener(evt, dimIntercept, { capture: true }));
-
-      // v24: Wischen/Scrollen zählt als Aktivität und hält die Seite hell
-      ["touchmove", "wheel", "scroll"].forEach(evt =>
-        window.addEventListener(evt, () => {
-          if (!isDimmed()) lastInteraction = Date.now();
-        }, { capture: true, passive: true }));
-
-      shield.addEventListener("pointerdown", dimIntercept);
-
-      // v24: Vollbild beim Scharfstellen des Wach-Modus
-      // (Android Chrome/Firefox; iOS Safari unterstützt das nicht)
-      function enterWakeFullscreen() {
-        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-          document.documentElement.requestFullscreen().catch(() => {});
-        }
-      }
-      function dimCheck(now) {
-        if (!wakeActiveDimming() || document.visibilityState !== "visible") return;
-        if (now - lastInteraction >= DIM_DELAY_MS && !alarmRinging) {
-          document.body.classList.add("screen-dim");
-          dimGuardOn();
-        } else {
-          document.body.classList.remove("screen-dim");
-          dimGuardOff();
-        }
-      }
-
-      // Sichtbarkeitswechsel: Sperren/Wiederkehren + Lock-Neuaufbau
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") {
-          // Merken, ob wir im scharfgestellten Zeitraum gesperrt wurden
-          wasHiddenWhileArmed = wakeWanted(new Date());
-          releaseWakeLock();
-          document.body.classList.remove("screen-dim");
-          dimGuardOff();
-        } else {
-          lastInteraction = Date.now();
-          if (wasHiddenWhileArmed && reminder.enabled) {
-            // Fällige Erinnerung wird von checkReminder nachgeholt;
-            // kurzer Hinweis, warum es evtl. nicht vorher klingelte
-            const banner = $("reminderBanner");
-            if (!alarmRinging) {
-              banner.hidden = false;
-              banner.classList.remove("rem-fired");
-              banner.textContent = "🔓 Bildschirm war gesperrt – fällige Erinnerung wurde ggf. verzögert.";
-            }
-          }
-          wasHiddenWhileArmed = false;
-          wakeRetryAt = 0;
-          wakeDenied = false;      // nach Rückkehr darf erneut gefragt werden
-          updateWakeLock();
-        }
-      });
-
-      /* --- Zeit-Hilfen für die Erinnerung --- */
-
-      function minutesOfDay(d) {
-        return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
-      }
-
-      function inRemFrame(now) {
-        if (!reminder.frameOn) return true;
-        return inMinuteWindow(minutesOfDay(now), reminder.frameStart, reminder.frameEnd);
-      }
-
-      function lastFeedEnd(session) {
-        let latest = 0;
-        for (const e of entries(session)) {
-          if (e.end !== null && e.end > latest) latest = e.end;
-        }
-        return latest;
-      }
-
-      function intervalAnchor(session) {
-        const end = lastFeedEnd(session);
-        return end > 0 ? end : session.startedAt;
-      }
-
-      /* Berechnet (je nach Modus) den nächsten Auslöse-Zeitpunkt + Kennung.
-         Gibt null zurück, wenn gerade keine Erinnerung ansteht/paussiert. */
-      function computeNextFire(now) {
-        if (!reminder.enabled) return null;
-
-        if (reminder.mode === "manual") {
-          if (reminder.manualUntil > now) {
-            return { at: reminder.manualUntil, key: "manual", label: "manueller Countdown" };
-          }
-          return null;
-        }
-
-        if (reminder.mode === "fixed") {
-          let best = null;
-          for (const t of reminder.times) {
-            const m = minutesOf(t);
-            if (m === null) continue;
-            const at = new Date(now);
-            at.setHours(Math.floor(m / 60), m % 60, 0, 0);
-            if (at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
-            if (!best || at.getTime() < best.at) {
-              best = { at: at.getTime(), key: "fixed-" + t, label: t + " Uhr" };
-            }
-          }
-          return best;
-        }
-
-        // Modus "interval": Anker = Ende der letzten Stillzeit der aktiven Reihe
-        const session = activeSeries();
-        if (!session) return null;
-        if (activeFeed()) return null;  // während des Stillens pausiert die Erinnerung
-
-        const anchor = intervalAnchor(session);
-        const step = reminder.intervalMin * 60 * 1000;
-        let target = anchor + step;
-        if (target <= now) target = now;   // fällig → sofort (Aufrufer behandelt)
-
-        // Zeitrahmen: Ziel außerhalb des Rahmens → auf Rahmenbeginn verschieben
-        if (!inRemFrame(new Date(target))) {
-          const fs = minutesOf(reminder.frameStart);
-          const shifted = new Date(target);
-          shifted.setHours(Math.floor(fs / 60), fs % 60, 0, 0);
-          if (shifted.getTime() <= target) shifted.setDate(shifted.getDate() + 1);
-          target = shifted.getTime();
-        }
-
-        return {
-          at: target,
-          key: "interval-" + Math.round((anchor + step) / 1000),
-          label: fmtDurationLong(target - now) + " bis Erinnerung"
-        };
-      }
-
-      function checkReminder(now) {
-        if (!reminder.enabled) return;
-
-        // Manueller Countdown: einmalig, dann zurück auf bereit
-        if (reminder.mode === "manual" && reminder.manualUntil > 0 && reminder.manualUntil <= now) {
-          if (lastFiredSlot !== "manual-" + reminder.manualUntil) {
-            lastFiredSlot = "manual-" + reminder.manualUntil;
-            lastFiredAt = now;
-            reminder.manualUntil = 0;
-            startAlarm();
-            scheduleSave();
-          }
-          return;
-        }
-
-        // Feste Uhrzeiten
-        if (reminder.mode === "fixed") {
-          const d = new Date(now);
-          const nowMin = Math.floor(minutesOfDay(d));
-          for (const t of reminder.times) {
-            const m = minutesOf(t);
-            if (m === null) continue;
-            if (m === nowMin) {
-              const key = "fixed-" + d.toDateString() + "-" + t;
-              if (lastFiredSlot !== key) {
-                lastFiredSlot = key;
-                lastFiredAt = now;
-                startAlarm();
-              }
-            }
-          }
-          return;
-        }
-
-        // Intervall-Modus
-        if (reminder.mode === "interval") {
-          const next = computeNextFire(now);
-          if (next && next.at <= now && next.key !== lastFiredSlot && inRemFrame(new Date(now))) {
-            lastFiredSlot = next.key;
-            lastFiredAt = now;
-            startAlarm();
-          }
-        }
-      }
-
-      /* --- UI der Erinnerung --- */
-
-      function syncReminderUI() {
-        $("remEnabled").checked = reminder.enabled;
-        $("remSettings").hidden = !reminder.enabled;
-        $("remMode").value = reminder.mode;
-        $("remFixedRows").hidden = reminder.mode !== "fixed";
-        $("remIntervalRows").hidden = reminder.mode !== "interval";
-        $("remManualRows").hidden = reminder.mode !== "manual";
-        $("remFrameOn").checked = reminder.frameOn;
-        $("remFrameRows").hidden = !reminder.frameOn || reminder.mode !== "interval";
-        $("remFrameStart").value = reminder.frameStart;
-        $("remFrameEnd").value = reminder.frameEnd;
-        $("remIntervalMin").value = reminder.intervalMin;
-        $("remManualMin").value = reminder.manualMin;
-        $("remTone").value = reminder.tone;
-        $("remCustomRows").hidden = reminder.tone !== "custom";
-        $("remCustomName").textContent = reminder.customName
-          ? reminder.customName
-          : "noch kein eigener Ton geladen";
-        $("remVolume").value = Math.round(reminder.volume * 100);
-        $("remWakeOn").checked = reminder.wakeOn;
-        $("remManualBar").hidden = !(reminder.enabled && reminder.mode === "manual");
-        $("remManualMinTop").value = reminder.manualMin;
-        updateWakeLock();
-        renderRemTimes();
-      }
-
-      function renderRemTimes() {
-        const host = $("remTimesList");
-        host.innerHTML = reminder.times.length
-          ? reminder.times.slice().sort().map(t =>
-              `<div class="rem-list-row"><span>🔔 ${t} Uhr</span>` +
-              `<button class="delete-button" type="button" data-rem-time="${t}">Entfernen</button></div>`
-            ).join("")
-          : '<div class="rem-inline-note">Noch keine Uhrzeiten eingetragen.</div>';
-
-        host.querySelectorAll("[data-rem-time]").forEach(btn => {
-          btn.addEventListener("click", () => {
-            reminder.times = reminder.times.filter(t => t !== btn.dataset.remTime);
-            renderRemTimes();
-            scheduleSave();
+        var deleteWaveButtons = list.querySelectorAll("[data-delete-wave]");
+        for (var a = 0; a < deleteWaveButtons.length; a++) {
+          deleteWaveButtons[a].addEventListener("click", function () {
+            deleteWave(Number(this.getAttribute("data-delete-wave")));
           });
-        });
-      }
-
-      /* ================= ENDE TEIL 1 =================
-         Nächste erwartete Zeile in Teil 2:
-         $("remEnabled").addEventListener("change", ...
-      */
-
-           $("remEnabled").addEventListener("change", () => {
-        reminder.enabled = $("remEnabled").checked;
-        syncReminderUI();
-        scheduleSave();
-        if (reminder.enabled) $("reminderHowtoDialog").showModal();
-      });
-
-      $("remHowto").addEventListener("click", () => $("reminderHowtoDialog").showModal());
-      $("reminderHowtoClose").addEventListener("click", () => $("reminderHowtoDialog").close());
-      $("reminderHowtoDialog").addEventListener("click", e => {
-        if (e.target === $("reminderHowtoDialog")) $("reminderHowtoDialog").close();
-      });
-
-      $("remMode").addEventListener("change", () => {
-        reminder.mode = $("remMode").value;
-        lastFiredSlot = "";
-        syncReminderUI();
-        scheduleSave();
-      });
-
-      $("remAddTime").addEventListener("click", () => {
-        const t = $("remNewTime").value;
-        if (!t || reminder.times.includes(t)) return;
-        if (reminder.times.length >= 24) return;
-        reminder.times.push(t);
-        renderRemTimes();
-        scheduleSave();
-      });
-
-      $("remIntervalMin").addEventListener("change", () => {
-        let v = Math.round(Number($("remIntervalMin").value));
-        if (!Number.isFinite(v)) v = 180;
-        reminder.intervalMin = Math.min(720, Math.max(1, v));
-        $("remIntervalMin").value = reminder.intervalMin;
-        reminder.manualMin = reminder.intervalMin;   // Default des manuellen Countdowns
-        $("remManualMin").value = reminder.manualMin;
-        lastFiredSlot = "";
-        scheduleSave();
-      });
-
-      $("remFrameOn").addEventListener("change", () => {
-        reminder.frameOn = $("remFrameOn").checked;
-        $("remFrameRows").hidden = !reminder.frameOn;
-        lastFiredSlot = "";
-        updateWakeLock();      // Zeitrahmen ändert auch, wann gewachst wird
-        scheduleSave();
-      });
-
-      $("remFrameStart").addEventListener("change", () => {
-        reminder.frameStart = $("remFrameStart").value;
-        lastFiredSlot = "";
-        updateWakeLock();
-        scheduleSave();
-      });
-      $("remFrameEnd").addEventListener("change", () => {
-        reminder.frameEnd = $("remFrameEnd").value;
-        lastFiredSlot = "";
-        updateWakeLock();
-        scheduleSave();
-      });
-      $("remManualStartTop").addEventListener("click", () => {
-        $("remManualMin").value = $("remManualMinTop").value;
-        $("remManualStart").click();
-      });
-      $("remManualMinTop").addEventListener("change", () => {
-        $("remManualMin").value = $("remManualMinTop").value;
-      });
-      $("remManualStart").addEventListener("click", () => {
-        if (wakeActiveDimming()) enterWakeFullscreen();
-        let v = Math.round(Number($("remManualMin").value));
-        if (!Number.isFinite(v)) v = reminder.manualMin;
-        v = Math.min(720, Math.max(1, v));
-        reminder.manualMin = v;
-        $("remManualMin").value = v;
-        reminder.manualUntil = Date.now() + v * 60 * 1000;
-        lastFiredSlot = "";
-        ensureAudioCtx();          // Mobile: Audio durch Nutzerinteraktion entsperren
-        undim();
-        scheduleSave();
-      });
-
-      $("remWakeOn").addEventListener("change", () => {
-        reminder.wakeOn = $("remWakeOn").checked;
-        if (!reminder.wakeOn) {
-          releaseWakeLock();
-          document.body.classList.remove("screen-dim");
-          $("remWakeStatus").textContent = "Wach-Modus ausgeschaltet.";
-        } else {
-          wakeDenied = false;
-          wakeRetryAt = 0;
-          updateWakeLock();
         }
-        scheduleSave();
-      });
-
-      $("remTone").addEventListener("change", () => {
-        reminder.tone = $("remTone").value;
-        syncReminderUI();
-        scheduleSave();
-        if (reminder.tone === "custom" && !reminder.customData) {
-          alert("Noch kein eigener Ton vorhanden – bitte zunächst über „Ton auswählen …“ eine Audiodatei laden.");
-        }
-      });
-
-      $("remPickTone").addEventListener("click", () => $("remToneFile").click());
-
-      $("remToneFile").addEventListener("change", event => {
-        const file = event.target.files && event.target.files[0];
-        event.target.value = "";
-        if (!file) return;
-
-        if (file.size > REM_MAX_TONE_BYTES) {
-          alert("Diese Datei ist zu groß (" + Math.round(file.size / 1024) + " KB). " +
-                "Bitte eine kürzere Audiodatei von maximal ca. 2 MB wählen.");
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = () => {
-          try {
-            reminder.customData = reader.result;
-            reminder.customName = file.name;
-            reminder.tone = "custom";
-            syncReminderUI();
-            scheduleSave();
-            alert("Eigener Klingelton gespeichert: " + file.name);
-          } catch (error) {
-            alert("Der Ton konnte nicht gespeichert werden – vermutlich reicht der " +
-                  "Browser-Speicher nicht aus. Bitte eine kleinere Datei wählen.");
-            reminder.customData = "";
-            reminder.customName = "";
-            reminder.tone = "default";
-            syncReminderUI();
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-
-      $("remVolume").addEventListener("input", () => {
-        reminder.volume = Math.min(1, Math.max(0, Number($("remVolume").value) / 100));
-        // v25: laufende Wiedergabe sofort mitregeln
-        if (customAudio) customAudio.volume = reminder.volume;
-        if (ringMaster && audioCtx) {
-          try { ringMaster.gain.setTargetAtTime(reminder.volume, audioCtx.currentTime, 0.05); } catch { /* egal */ }
-        }
-      });
-      $("remVolume").addEventListener("change", () => scheduleSave());
-
-      $("remTest").addEventListener("click", () => {
-        if (testTimer) {
-          // Test läuft → erneut antippen beendet ihn sofort
-          clearTimeout(testTimer);
-          testTimer = null;
-          stopAllSound();
-          $("remTest").textContent = "Test ▶";
-          return;
-        }
-        ensureAudioCtx();          // Mobile: Wiedergabe braucht Nutzerinteraktion
-        undim();
-        playReminderSound();
-        $("remTest").textContent = "Test ■";
-        const finishTest = () => {
-          testTimer = null;
-          stopAllSound();
-          $("remTest").textContent = "Test ▶";
-        };
-        // Sicherheitsnetz: spätestens nach 60 s aus
-        testTimer = setTimeout(finishTest, 60000);
-        // Bei eigenem Ton: natürliches Ende der Datei beendet den Test
-        if (reminder.tone === "custom" && customAudio) {
-          customAudio.onended = () => {
-            if (testTimer) { clearTimeout(testTimer); finishTest(); }
-          };
-        }
-      });
-
-      /* --- Erinnerungs-Banner im Hauptbereich (auch Alarm-Quittierung) --- */
-
-      function renderReminderBanner(now) {
-        const box = $("reminderBanner");
-        if (!reminder.enabled) { box.hidden = true; return; }
-
-        if (alarmRinging) {
-          box.hidden = false;
-          box.classList.add("rem-fired");
-          box.textContent = "🔔 Erinnerung! Antippen zum Quittieren";
-          return;
-        }
-
-        const next = computeNextFire(new Date(now));
-
-        if (!next) {
-          box.hidden = false;
-          box.classList.remove("rem-fired");
-          if (reminder.mode === "manual") {
-            box.textContent = "🔔 Erinnerung bereit – Countdown starten";
-          } else if (reminder.mode === "interval" && activeFeed()) {
-            box.textContent = "🔔 Erinnerung pausiert (Stillzeit läuft)";
-          } else {
-            box.textContent = "🔔 Erinnerung bereit";
-          }
-          return;
-        }
-
-        box.hidden = false;
-        box.classList.remove("rem-fired");
-        const restMs = next.at - now;
-        if (reminder.mode === "fixed") {
-          box.textContent = "🔔 Nächste Erinnerung: " + next.label +
-            " (in " + fmtDurationLong(restMs) + ")";
-        } else if (reminder.mode === "interval") {
-          box.textContent = "🔔 Nächste Erinnerung in " + fmtDurationLong(restMs);
-        } else {
-          box.textContent = "🔔 Manueller Countdown: " + fmtDurationLong(restMs);
-        }
-      }
-
-      $("reminderBanner").addEventListener("click", () => {
-        if (alarmRinging) {
-          stopAlarm();
-          undim();
-        }
-      });
-
-      /* ============ Kernlogik ============ */
-
-      function setSide(side) {
-        if (alarmRinging) stopAlarm();
-        undim();
-
-        const session = activeSeries();
-        if (session && isCurrentView()) {
-          const active = activeFeed();
-          if (active && active.side !== side) {
-            active.end = Date.now();
-            session.entries.push({ side, start: Date.now(), end: null });
-            // neues Stillen setzt den Intervall-Timer zurück
-            lastFiredSlot = "";
-          }
-        }
-
-        currentSide = side;
-        updateControls();
-        scheduleSave();
-        renderFeed(Date.now());
-      }
-
-      function toggleFeed() {
-        if (wakeActiveDimming()) enterWakeFullscreen();
-        if (alarmRinging) stopAlarm();
-        undim();
-
-        const session = activeSeries();
-        if (!session || !isCurrentView()) return;
-
-        const active = activeFeed();
-        if (active) {
-          active.end = Date.now();
-          if (autoSwitch === "on") {
-            currentSide = active.side === "left" ? "right" : "left";
-          }
-          $("feedDetails").open = true;
-          // Ende der Stillzeit = neuer Anker für den Intervall-Timer
-          lastFiredSlot = "";
-        } else {
-          session.entries.push({ side: currentSide, start: Date.now(), end: null });
-          lastFiredSlot = "";
-        }
-
-        updateControls();
-        scheduleSave();
-        renderFeed(Date.now());
-      }
-
-      /* ============ Steuerung oben ============ */
-
-      function updateControls(now = Date.now()) {
-        const session = activeSeries();
-        const active = activeFeed();
-
-        $("sideLeft").classList.toggle("selected", currentSide === "left");
-        $("sideRight").classList.toggle("selected", currentSide === "right");
-
-        const toggleBtn = $("bigToggle");
-        toggleBtn.textContent = active ? "Stillzeit beenden" : "Stillzeit starten";
-        toggleBtn.classList.toggle("running", Boolean(active));
-        toggleBtn.disabled = !isCurrentView();
-        $("sideLeft").disabled = !isCurrentView();
-        $("sideRight").disabled = !isCurrentView();
-
-        const timerBox = $("liveTimer");
-        if (isCurrentView()) {
-          timerBox.hidden = false;
-          timerBox.classList.toggle("recording", Boolean(active));
-          timerBox.classList.toggle("tappable", Boolean(active));
-          timerBox.title = active ? "Antippen: Notiz zur laufenden Stillzeit" : "";
-          $("liveStatus").textContent = active
-            ? `Aufzeichnung läuft · ${active.side === "left" ? "Links" : "Rechts"}${active.note ? " · 📝" : ""}`
-            : "Bereit";
-          $("liveTime").textContent = active ? fmt(now - active.start) : "00:00";
-
-          const noteEl = $("liveNote");
-          if (active && active.note) {
-            noteEl.hidden = false;
-            noteEl.textContent = "📝 " + active.note;
-          } else {
-            noteEl.hidden = true;
-            noteEl.textContent = "";
-          }
-        } else {
-          timerBox.hidden = true;
-        }
-      }
-
-      $("sideLeft").addEventListener("click", () => setSide("left"));
-      $("sideRight").addEventListener("click", () => setSide("right"));
-      $("bigToggle").addEventListener("click", toggleFeed);
-
-      $("liveTimer").addEventListener("click", () => {
-        const active = activeFeed();
-        if (active && isCurrentView()) promptNote(active);
-      });
-
-      $("autoSwitch").addEventListener("change", () => {
-        autoSwitch = $("autoSwitch").value;
-        scheduleSave();
-      });
-
-      /* ============ Letzte Stillzeit ============ */
-
-      function lastFinishedEntry(session) {
-        const finished = entries(session).filter(e => e.end !== null);
-        return finished.length ? finished[finished.length - 1] : null;
-      }
-
-      $("lastFeed").addEventListener("click", () => {
-        promptNote(lastFinishedEntry(activeSeries()));
-      });
-
-      function renderLastFeed(now) {
-        const box = $("lastFeed");
-        const last = lastFinishedEntry(activeSeries());
-
-        if (!last) { box.hidden = true; return; }
-        box.hidden = false;
-        box.classList.toggle("side-left", last.side === "left");
-        box.classList.toggle("side-right", last.side !== "left");
-        box.innerHTML = `
-          <strong><i class="dot" style="background:rgba(255,255,255,.85)"></i>Zuletzt: ${last.side === "left" ? "Links" : "Rechts"}</strong>
-          ${dayLabel(last.end)} · ${timeOfDay(last.end)} Uhr<br>
-          Dauer: ${fmt(last.end - last.start)} <span style="opacity:.75">(${agoText(last.end, now)})</span>
-          ${last.note ? `<div class="feed-note">📝 ${escapeHtml(last.note)}</div>` : `<div style="opacity:.7;font-size:.78rem;margin-top:4px">Antippen für Notiz</div>`}
-        `;
-      }
-
-      /* ============ Zeitstrahl ============ */
-
-      const graph = $("feedGraph");
-      const gctx = graph.getContext("2d");
-
-      function themeColors() {
-        const cs = getComputedStyle(document.documentElement);
-        const get = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
-        return {
-          bg: get("--surface", "#fffdfb"),
-          grid: get("--line", "#eaded5"),
-          text: get("--muted", "#796b65"),
-          mid: get("--line", "#eaded5"),
-          label: get("--muted", "#796b65"),
-          left: get("--left", "#bd6553"),
-          right: get("--right-strong", "#cfa75f")
-        };
-      }
-
-      function fillRoundRect(ctx, x, y, w, h, r) {
-        r = Math.min(r, w / 2, h / 2);
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.arcTo(x + w, y, x + w, y + r, r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-        ctx.lineTo(x + r, y + h);
-        ctx.arcTo(x, y + h, x, y + h - r, r);
-        ctx.lineTo(x, y + r);
-        ctx.arcTo(x, y, x + r, y, r);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      function resizeGraph() {
-        const rect = graph.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        graph.width = Math.max(1, Math.round(rect.width * dpr));
-        graph.height = Math.max(1, Math.round(rect.height * dpr));
-        gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        drawTimeline(Date.now());
-      }
-
-      function effectiveSpanHours() { return zoomSpanHours ?? viewSpanHours; }
-
-      function moveView(direction) {
-        const span = effectiveSpanHours() * HOUR;
-        const now = Date.now();
-        const base = viewRight === null ? now : viewRight;
-
-        let candidate = base - direction * span;
-
-        const dataStart = dataStartTime(selectedSeries());
-        const earliestRight = dataStart + span;
-        candidate = Math.max(candidate, earliestRight);
-        candidate = Math.min(candidate, now);
-        viewRight = candidate >= now - 1000 ? null : candidate;
-
-        hideTapDetail();
-        drawTimeline(now);
-        scheduleSave();
-      }
-
-      function dataStartTime(session) {
-        const times = entries(session).map(e => e.start);
-        if (session?.startedAt) times.push(session.startedAt);
-        return times.length ? Math.min(...times) : Date.now();
-      }
-
-      function drawTimeline(now) {
-        try {
-          const tc = themeColors();
-          const rect = graph.getBoundingClientRect();
-          const w = rect.width;
-          const h = rect.height;
-          if (!w || !h) return;
-
-          gctx.clearRect(0, 0, w, h);
-          gctx.fillStyle = tc.bg;
-          gctx.fillRect(0, 0, w, h);
-
-          const session = selectedSeries();
-          const allEntries = entries(session).map(e => ({ ...e, end: e.end ?? now }));
-          const dataEnd = Math.max(now, ...allEntries.map(e => e.end));
-          const dataStart = dataStartTime(session);
-          const span = effectiveSpanHours() * HOUR;
-          const right = viewRight === null ? dataEnd : Math.min(viewRight, dataEnd);
-          const left = right - span;
-
-          const statusEl = $("graphStatus");
-          if (viewRight === null || right >= dataEnd - 30 * 1000) {
-            viewRight = null;
-            statusEl.textContent = "Ansicht: aktuelle Zeit · Balken antippen für Details";
-          } else {
-            statusEl.textContent =
-              `Ansicht: ${dayLabel(left)} ${timeOfDay(left)} – ${dayLabel(right)} ${timeOfDay(right)} Uhr`;
-          }
-
-          $("panBack").disabled = (right - span) <= dataStart + 1000;
-          $("panForward").disabled = viewRight === null;
-
-          const visible = allEntries.filter(e => e.end > left && e.start < right);
-          tapTargets = [];
-
-          const padL = 14, padR = 14, padT = 10, padB = 40;
-          const mapX = time => padL + ((time - left) / span) * (w - padL - padR);
-
-          const spanHours = effectiveSpanHours();
-          const stepMs = spanHours <= 1 ? 15 * 60 * 1000
-            : spanHours <= 3 ? 30 * 60 * 1000
-            : spanHours <= 12 ? 2 * HOUR
-            : spanHours <= 24 ? 3 * HOUR
-            : 12 * HOUR;
-          const firstTick = Math.ceil(left / stepMs) * stepMs;
-
-          gctx.strokeStyle = tc.grid;
-          gctx.lineWidth = 1;
-          gctx.font = "10px system-ui, sans-serif";
-          gctx.textAlign = "center";
-
-          for (let t = firstTick; t <= right; t += stepMs) {
-            const x = mapX(t);
-            if (x < padL || x > w - padR) continue;
-
-            gctx.beginPath();
-            gctx.moveTo(x, padT);
-            gctx.lineTo(x, h - padB);
-            gctx.stroke();
-
-            gctx.fillStyle = tc.text;
-            gctx.fillText(timeOfDay(t), x, h - padB + 14);
-
-            const date = new Date(t);
-            if (date.getHours() === 0 && date.getMinutes() === 0) {
-              gctx.fillText(dayLabel(t), x, h - padB + 28);
-            }
-          }
-
-          if (!visible.length) {
-            gctx.fillStyle = tc.text;
-            gctx.font = "14px system-ui, sans-serif";
-            gctx.textAlign = "center";
-            gctx.fillText(
-              allEntries.length ? "In diesem Zeitraum keine Stillzeiten" : "Deine Stillzeiten erscheinen hier",
-              w / 2, h / 2
-            );
-            return;
-          }
-
-          const midY = (padT + (h - padB - 4)) / 2;
-          const half = (midY - padT);
-
-          gctx.strokeStyle = tc.mid;
-          gctx.beginPath();
-          gctx.moveTo(padL, midY);
-          gctx.lineTo(w - padR, midY);
-          gctx.stroke();
-
-          gctx.fillStyle = tc.label;
-          gctx.font = "10px system-ui, sans-serif";
-          gctx.textAlign = "left";
-          gctx.fillText("Links ▲", padL + 2, midY - 4);
-          gctx.fillText("Rechts ▼", padL + 2, midY + 12);
-
-          function assignRows(list) {
-            const sorted = [...list].sort((a, b) => a.start - b.start);
-            const rows = [];
-            for (const entry of sorted) {
-              let row = 0;
-              while (rows[row]?.some(o => entry.start < o.end && o.start < entry.end)) row++;
-              (rows[row] ||= []).push(entry);
-              entry.row = row;
-            }
-            return sorted;
-          }
-
-          const leftRows = assignRows(visible.filter(e => e.side === "left"));
-          const rightRows = assignRows(visible.filter(e => e.side === "right"));
-          const maxRows = Math.max(
-            leftRows.reduce((m, e) => Math.max(m, e.row + 1), 1),
-            rightRows.reduce((m, e) => Math.max(m, e.row + 1), 1)
-          );
-
-          const barH = Math.max(8, Math.min(30, (half - 8) / maxRows - 3));
-
-          function pushBar(entry, x1, x2, y) {
-            const cx1 = Math.max(x1, padL);
-            const cx2 = Math.min(x2, w - padR);
-            if (cx2 <= cx1) return;
-            tapTargets.push({
-              side: entry.side, start: entry.start, end: entry.end,
-              x: cx1, y, w: cx2 - cx1, h: barH
-            });
-          }
-
-          for (const e of leftRows) {
-            pushBar(e, mapX(e.start), mapX(e.end),
-              midY - 6 - (e.row + 1) * barH - e.row * 3);
-          }
-          for (const e of rightRows) {
-            pushBar(e, mapX(e.start), mapX(e.end),
-              midY + 6 + e.row * (barH + 3));
-          }
-
-          for (const t of tapTargets) {
-            gctx.fillStyle = t.side === "left" ? tc.left : tc.right;
-            fillRoundRect(gctx, t.x, t.y, t.w, t.h, 5);
-          }
-        } catch (error) {
-          $("graphStatus").textContent = "Fehler im Zeitstrahl: " + error.message;
-        }
-      }
-
-      /* ============ Antippen (Pointer-Events) ============ */
-
-      const TAP_RADIUS = 16;
-      const MOVE_TOLERANCE = 18;
-      const MAX_POINTER_MS = 900;
-
-      let pointerDown = null;
-
-      function hideTapDetail() {
-        openDetail = null;
-        $("tapDetailHost").innerHTML = "";
-      }
-
-      function showTapDetail(data, now) {
-        const session = selectedSeries();
-        const entry = entries(session).find(e => e.start === data.start && e.side === data.side);
-        openDetail = { ...data };
-
-        $("tapDetailHost").innerHTML = `
-          <div class="tap-detail ${data.side === "left" ? "side-left" : "side-right"}">
-            <button class="tap-close" type="button" aria-label="Schließen">×</button>
-            <div class="tap-title">Stillzeit · ${data.side === "left" ? "links" : "rechts"}</div>
-            <div>${dayLabel(data.start)} · ${timeOfDay(data.start)} Uhr</div>
-            <div>Dauer: ${fmt((data.end ?? now) - data.start)}</div>
-            <div>${agoText(data.start, now)}</div>
-            ${entry && entry.note ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.35);font-style:italic">📝 ${escapeHtml(entry.note)}</div>` : ""}
-          </div>
-        `;
-        $("tapDetailHost").querySelector(".tap-close").addEventListener("click", event => {
-          event.stopPropagation();
-          hideTapDetail();
-        });
-      }
-
-      function findTargetAt(clientX, clientY) {
-        const rect = graph.getBoundingClientRect();
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-
-        let best = null;
-        let bestDistance = Infinity;
-
-        for (const target of tapTargets) {
-          const dx = x < target.x ? target.x - x
-            : x > target.x + target.w ? x - (target.x + target.w) : 0;
-          const dy = y < target.y ? target.y - y
-            : y > target.y + target.h ? y - (target.y + target.h) : 0;
-          const distance = Math.hypot(dx, dy);
-
-          if (distance <= TAP_RADIUS && distance < bestDistance) {
-            best = target;
-            bestDistance = distance;
-          }
-        }
-        return best;
-      }
-
-      graph.addEventListener("pointerdown", event => {
-        pointerDown = { x: event.clientX, y: event.clientY, time: Date.now() };
-      });
-
-      graph.addEventListener("pointerup", event => {
-        if (!pointerDown) return;
-        const start = pointerDown;
-        pointerDown = null;
-
-        const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-        const duration = Date.now() - start.time;
-
-        if (moved > MOVE_TOLERANCE || duration > MAX_POINTER_MS) return;
-
-        const hit = findTargetAt(event.clientX, event.clientY);
-        if (hit) showTapDetail(hit, Date.now());
-        else hideTapDetail();
-      });
-
-      graph.addEventListener("pointercancel", () => { pointerDown = null; });
-      $("tapDetailHost").addEventListener("pointerdown", event => event.stopPropagation());
-
-      /* ============ Statistik ============ */
-
-      function renderStats(now) {
-        const session = selectedSeries();
-        const today = entries(session).filter(e =>
-          e.end !== null && isSameDay(e.start, now));
-
-        const sideStat = side => {
-          const list = today.filter(e => e.side === side);
-          const total = list.reduce((s, e) => s + (e.end - e.start), 0);
-          return { count: list.length, total: list.length ? fmt(total) : "—" };
-        };
-        const l = sideStat("left"), r = sideStat("right");
-        const grandTotal = today.reduce((s, e) => s + (e.end - e.start), 0);
-
-        $("statsBox").innerHTML = `
-          <div class="stat stat-left"><span>Links heute</span><strong>${l.count} × · ${l.total}</strong></div>
-          <div class="stat stat-right"><span>Rechts heute</span><strong>${r.count} × · ${r.total}</strong></div>
-          <div class="stat stat-total"><span>Gesamt heute</span><strong>${today.length} × · ${today.length ? fmt(grandTotal) : "—"}</strong></div>
-        `;
-      }
-
-      /* ============ Listen ============ */
-
-      function renderFeedList() {
-        const list = $("feedList");
-        const session = selectedSeries();
-        const finished = entries(session).filter(e => e.end !== null)
-          .sort((a, b) => b.start - a.start);
-
-        $("feedSummary").textContent = `Einträge anzeigen (${finished.length})`;
-
-        if (!finished.length) {
-          list.innerHTML = '<div class="empty">Noch keine Stillzeiten erfasst.</div>';
-          return;
-        }
-
-        list.innerHTML = finished.slice(0, 100).map(entry => `
-          <div class="feed-row ${entry.side === "left" ? "side-left" : "side-right"}">
-            <div class="feed-info">
-              <div class="feed-title"><span class="side-badge">${entry.side === "left" ? "L" : "R"}</span>${dayLabel(entry.start)} · ${timeOfDay(entry.start)} Uhr</div>
-              <div class="feed-detail">Dauer: ${fmt(entry.end - entry.start)}</div>
-              ${entry.note ? `<div class="feed-detail feed-note">📝 ${escapeHtml(entry.note)}</div>` : ""}
-            </div>
-            ${isCurrentView()
-              ? `<div class="row-buttons">
-                   <button class="note-button" type="button" data-note="${entry.start}">Notiz</button>
-                   <button class="delete-button" type="button" data-delete="${entry.start}">Löschen</button>
-                 </div>`
-              : ""}
-          </div>
-        `).join("");
-
-        list.querySelectorAll("[data-delete]").forEach(button => {
-          button.addEventListener("click", () => {
-            const start = Number(button.dataset.delete);
-            if (!confirm("Diesen Still-Eintrag löschen?")) return;
-            const session = activeSeries();
-            if (!session) return;
-            session.entries = session.entries.filter(e => e.start !== start);
-            lastFiredSlot = "";   // Anker kann sich ändern
-            scheduleSave();
-            renderFeed(Date.now());
+        var deleteWaterButtons = list.querySelectorAll("[data-delete-water]");
+        for (var b = 0; b < deleteWaterButtons.length; b++) {
+          deleteWaterButtons[b].addEventListener("click", function () {
+            deleteEvent("water", Number(this.getAttribute("data-delete-water")));
           });
-        });
-
-        list.querySelectorAll("[data-note]").forEach(button => {
-          button.addEventListener("click", () => {
-            const start = Number(button.dataset.note);
-            const session = activeSeries();
-            const entry = entries(session).find(e => e.start === start);
-            promptNote(entry);
+        }
+        var deleteNoteButtons = list.querySelectorAll("[data-delete-note]");
+        for (var c = 0; c < deleteNoteButtons.length; c++) {
+          deleteNoteButtons[c].addEventListener("click", function () {
+            deleteEvent("note", Number(this.getAttribute("data-delete-note")));
           });
-        });
+        }
       }
+
+      /* ===================== Render: Historie ===================== */
 
       function renderHistory() {
-        const list = $("historyList");
-        const ordered = [...series].sort((a, b) => b.startedAt - a.startedAt);
+        var list = $("historyList");
+        var ordered = sessions.slice().sort(function (a, b) { return b.startedAt - a.startedAt; });
 
-        $("historySummary").textContent = `Gespeicherte Reihen anzeigen (${series.length})`;
+        $("historySummary").textContent = "Gespeicherte Messungen anzeigen (" + sessions.length + ")";
 
         if (!ordered.length) {
-          list.innerHTML = '<div class="empty">Noch keine gespeicherten Reihen.</div>';
+          list.innerHTML = '<div class="empty">Noch keine gespeicherten Messungen.</div>';
           return;
         }
 
-        list.innerHTML = ordered.map(session => {
-          const isCurrent = session.id === currentId;
-          const isSelected = session.id === selectedId;
-          const label = isCurrent ? "Aktuell" : session.finished ? "Beendet" : "Gespeichert";
-          const totals = { left: 0, right: 0 };
-          for (const e of entries(session)) {
-            if (e.end !== null) totals[e.side] += e.end - e.start;
+        var html = "";
+        for (var i = 0; i < ordered.length; i++) {
+          var session = ordered[i];
+          var isCurrent = session.id === currentId;
+          var isSelected = session.id === selectedId;
+          var label = isCurrent ? "Aktuell" : (session.finished ? "Beendet" : "Gespeichert");
+          var ws = waves(session);
+          var count = ws.length;
+          var extras = [];
+
+          /* v11: Datum prominent, Wellen-Gesamtdauer, Ø-Abstand */
+          var waveSum = 0;
+          for (var w = 0; w < ws.length; w++) {
+            if (ws[w].end !== null && ws[w].end !== undefined) waveSum += ws[w].end - ws[w].start;
           }
-          const split = `L ${fmt(totals.left)} · R ${fmt(totals.right)}`;
+          if (count) {
+            extras.push(count + (count === 1 ? " Welle" : " Wellen") + " · Σ " + fmt(waveSum));
+          }
+          if (ws.length >= 2) {
+            var ivSum = 0;
+            for (var iv = 1; iv < ws.length; iv++) ivSum += ws[iv].start - ws[iv - 1].start;
+            extras.push("Ø Abstand " + fmt(ivSum / (ws.length - 1)));
+          }
+          if (waterEvents(session).length) extras.push(waterEvents(session).length + "× Blasensprung");
+          if (noteEvents(session).length) extras.push(noteEvents(session).length + " Notiz(en)");
 
-          return `
-            <div class="feed-row">
-              <div class="feed-info">
-                <div class="feed-title">${dateTime(session.startedAt)}</div>
-                <div class="feed-detail">${label} · ${entries(session).length} Stillzeiten · ${split}</div>
-              </div>
-              <div class="row-buttons">
-                <button class="history-button" type="button" data-open="${session.id}" ${isSelected ? "disabled" : ""}>
-                  ${isSelected ? "Angezeigt" : "Öffnen"}
-                </button>
-                <button class="delete-button" type="button" data-del-series="${session.id}">Löschen</button>
-              </div>
-            </div>
-          `;
-        }).join("");
+          html +=
+            '<div class="history-row">' +
+              '<div class="history-info">' +
+                '<div class="history-title">' + dayLabel(session.startedAt) + ' · ' + timeOfDay(session.startedAt) + ' Uhr</div>' +
+                '<div class="history-detail">' + label +
+                  (extras.length ? " · " + extras.join(" · ") : "") + '</div>' +
+              '</div>' +
+              '<div style="display:flex;gap:6px;flex:0 0 auto">' +
+                '<button class="history-button" type="button" data-open="' + session.id + '"' +
+                  (isSelected ? " disabled" : "") + '>' +
+                  (isSelected ? "Angezeigt" : "Öffnen") +
+                '</button>' +
+                '<button class="delete-button" type="button" data-del="' + session.id + '">Löschen</button>' +
+              '</div>' +
+            '</div>';
+        }
 
-        list.querySelectorAll("[data-open]").forEach(button => {
-          button.addEventListener("click", () => {
-            const session = series.find(s => s.id === button.dataset.open);
-            if (!session) return;
-            session.finished = false;
-            currentId = session.id;
-            selectedId = session.id;
-            lastFiredSlot = "";
-            hideTapDetail();
-            applyViewState(session);
-            scheduleSave();
-            renderFeed(Date.now());
+        list.innerHTML = html;
+
+        var openButtons = list.querySelectorAll("[data-open]");
+        for (var j = 0; j < openButtons.length; j++) {
+          openButtons[j].addEventListener("click", function () {
+            selectedId = this.getAttribute("data-open");
+            viewRight = null;
+            render();
           });
-        });
+        }
 
-        list.querySelectorAll("[data-del-series]").forEach(button => {
-          button.addEventListener("click", () => deleteSeries(button.dataset.delSeries));
-        });
+        var delButtons = list.querySelectorAll("[data-del]");
+        for (var k = 0; k < delButtons.length; k++) {
+          delButtons[k].addEventListener("click", function () {
+            deleteHistory(this.getAttribute("data-del"));
+          });
+        }
       }
 
-      function deleteSeries(id) {
-        const session = series.find(s => s.id === id);
+      function deleteHistory(id) {
+        var session = null;
+        for (var i = 0; i < sessions.length; i++) {
+          if (sessions[i].id === id) { session = sessions[i]; break; }
+        }
         if (!session) return;
 
-        if (!confirm(
-          "Diese Messreihe (Beginn " + dateTime(session.startedAt) + ", " +
-          entries(session).length + " Stillzeiten) endgültig löschen? " +
-          "Dies kann nicht rückgängig gemacht werden."
-        )) return;
+        var isCurrent = session.id === currentId;
+        if (!confirm("Diese Messung (Beginn " + dateTime(session.startedAt) + ") endgültig löschen? Dies kann nicht rückgängig gemacht werden.")) {
+          return;
+        }
 
-        const wasCurrent = id === currentId;
-        series = series.filter(s => s.id !== id);
+        var kept = [];
+        for (var j = 0; j < sessions.length; j++) {
+          if (sessions[j].id !== id) kept.push(sessions[j]);
+        }
+        sessions = kept;
 
-        if (wasCurrent) {
-          if (!series.length) {
-            const fresh = makeSeries();
-            series.push(fresh);
-            currentId = fresh.id;
-          } else {
-            currentId = [...series].sort((a, b) => b.startedAt - a.startedAt)[0].id;
+        if (isCurrent) {
+          if (!sessions.length) {
+            var fresh = makeSession();
+            sessions.push(fresh);
           }
+          currentId = sessions[sessions.length - 1].id;
         }
         if (selectedId === id) selectedId = currentId;
 
-        lastFiredSlot = "";
-        hideTapDetail();
-        applyViewState(activeSeries());
-        scheduleSave();
-        renderFeed(Date.now());
+        save();
+        render();
       }
 
-      /* ============ Zeitraum, Zoom, Navigation ============ */
+      function deleteWave(start) {
+        var session = activeSession();
+        if (!session || !isCurrentView() || session.finished) return;
 
-      document.querySelectorAll(".span-button").forEach(button => {
-        button.addEventListener("click", () => {
-          document.querySelectorAll(".span-button").forEach(b => b.classList.remove("active"));
-          button.classList.add("active");
-          viewSpanHours = Number(button.dataset.span);
-          zoomSpanHours = null;
-          hideTapDetail();
-          drawTimeline(Date.now());
-          scheduleSave();
-        });
-      });
+        var ws = waves(session);
+        var index = -1;
+        for (var i = 0; i < ws.length; i++) {
+          if (ws[i].start === start) { index = i; break; }
+        }
+        if (index < 0) return;
+
+        if (!confirm("Diese Welle löschen? Ihre Dauer und die folgende Pause werden der vorherigen Pause zugeschlagen, falls eine vorhanden ist.")) {
+          return;
+        }
+
+        var wave = ws[index];
+        var previousWave = index > 0 ? ws[index - 1] : null;
+        var nextWave = index < ws.length - 1 ? ws[index + 1] : null;
+
+        var previousPause = null;
+        if (previousWave) {
+          var prevEnd = previousWave.end !== null && previousWave.end !== undefined
+            ? previousWave.end : previousWave.start;
+          for (var p = 0; p < session.segments.length; p++) {
+            var seg = session.segments[p];
+            if (seg.type === "pause" && seg.start >= prevEnd && seg.start < wave.start) {
+              previousPause = seg;
+            }
+          }
+        }
+
+        var waveEnd = wave.end !== null && wave.end !== undefined ? wave.end : wave.start;
+        var followingPause = null;
+        for (var q = 0; q < session.segments.length; q++) {
+          var seg2 = session.segments[q];
+          if (seg2.type === "pause" && seg2.start >= waveEnd &&
+              (!nextWave || seg2.start < nextWave.start)) {
+            followingPause = seg2;
+          }
+        }
+
+        if (previousPause) {
+          previousPause.end = followingPause
+            ? followingPause.end
+            : wave.end;
+        }
+
+        var removeMap = {};
+        removeMap[wave.start + "-" + wave.type] = true;
+        if (followingPause) removeMap[followingPause.start + "-" + followingPause.type] = true;
+
+        if (!previousWave && !previousPause) {
+          for (var r = 0; r < session.segments.length; r++) {
+            var seg3 = session.segments[r];
+            if (seg3.type === "pause" && seg3.end !== null && seg3.end <= wave.start) {
+              removeMap[seg3.start + "-" + seg3.type] = true;
+            }
+          }
+        }
+
+        var kept = [];
+        for (var s = 0; s < session.segments.length; s++) {
+          var seg4 = session.segments[s];
+          if (!removeMap[seg4.start + "-" + seg4.type]) kept.push(seg4);
+        }
+        session.segments = kept;
+
+        save();
+        render();
+      }
+
+      function deleteEvent(type, at) {
+        var session = activeSession();
+        if (!session || !isCurrentView() || session.finished) return;
+
+        var label = type === "water" ? "Diesen Blasensprung" : "Diese Notiz";
+        if (!confirm(label + " löschen?")) return;
+
+        var kept = [];
+        for (var i = 0; i < session.events.length; i++) {
+          var ev = session.events[i];
+          if (!(ev.type === type && ev.at === at)) kept.push(ev);
+        }
+        session.events = kept;
+
+        save();
+        render();
+      }
+
+      function addWater() {
+        var session = activeSession();
+        if (!session || selectedId !== currentId || session.finished) return;
+
+        session.events.push({ type: "water", at: Date.now(), text: "" });
+        save();
+        render();
+        $("recordsDetails").open = true;
+      }
+
+      function addNote() {
+        var session = activeSession();
+        if (!session || selectedId !== currentId || session.finished) return;
+
+        var field = $("noteText");
+        var text = field.value.replace(/^\s+|\s+$/g, "");
+        if (!text) {
+          field.focus();
+          return;
+        }
+
+        session.events.push({ type: "note", at: Date.now(), text: text });
+        field.value = "";
+        save();
+        render();
+        $("recordsDetails").open = true;
+      }
+
+
+      function openDetailDialog(target, now) {
+        var title = $("dialogTitle");
+        var sub = $("dialogSub");
+        var body = $("dialogBody");
+
+        if (target.type === "note") {
+          title.textContent = "Notiz N" + target.num + " · " + timeOfDay(target.event.at) + " Uhr";
+          sub.textContent = agoLabel(now - target.event.at);
+          body.hidden = false;
+          body.textContent = target.event.text || "(Kein Text)";
+        } else {
+          title.textContent = "Blasensprung · " + timeOfDay(target.event.at) + " Uhr";
+          sub.textContent = agoLabel(now - target.event.at);
+          body.hidden = true;
+          body.textContent = "";
+        }
+
+        $("detailDialog").showModal();
+      }
+
+      function pad2(value) {
+        return value < 10 ? "0" + value : String(value);
+      }
+
+      function axisLabel(mode, elapsedMs, absoluteTs) {
+        if (mode === "clock") {
+          var d = new Date(absoluteTs);
+          return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+        }
+        var seconds = Math.max(0, Math.floor(elapsedMs / 1000));
+        var hours = Math.floor(seconds / 3600);
+        var minutes = Math.floor((seconds % 3600) / 60);
+        var remainder = seconds % 60;
+
+        if (hours > 0) {
+          return hours + ":" + pad2(minutes) + ":" + pad2(remainder);
+        }
+        if (minutes > 0) {
+          return minutes + ":" + pad2(remainder) + " min";
+        }
+        return remainder + " sec";
+      }
+
+      function resizeCanvas() {
+        var rect = canvas.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.round(rect.width * dpr));
+        canvas.height = Math.max(1, Math.round(rect.height * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawGraph(Date.now());
+      }
+
+      function roundRectPath(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      function themeColors() {
+        var cs = getComputedStyle(document.documentElement);
+        function get(name, fallback) {
+          var value = cs.getPropertyValue(name).trim();
+          return value || fallback;
+        }
+        return {
+          bg: get("--surface", "#fffdfb"),
+          track: get("--track", "#f0e7e0"),
+          grid: get("--line", "#eee4dc"),
+          text: get("--muted", "#796b65"),
+          wave: get("--wave", "#bd6553"),
+          pause: get("--pause", "#d9b989"),
+          water: get("--water", "#7d9bb8"),
+          note: get("--note", "#a3814f")
+        };
+      }
+
+      function drawGraph(now) {
+        var tc = themeColors();
+        var session = selectedSession();
+        var segments = session ? session.segments : [];
+        var rect = canvas.getBoundingClientRect();
+        var w = rect.width;
+        var h = rect.height;
+        if (!w || !h) return;
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = tc.bg;
+        ctx.fillRect(0, 0, w, h);
+
+        hitTargets = [];
+
+        if (!segments.length) {
+          ctx.fillStyle = tc.text;
+          ctx.font = "14px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("Dein Verlauf erscheint hier", w / 2, h / 2);
+          return;
+        }
+
+        var first = segments[0].start;
+        var dataEnd = session.finished && session.endedAt ? session.endedAt : now;
+        for (var i = 0; i < segments.length; i++) {
+          var segEnd = segments[i].end !== null && segments[i].end !== undefined ? segments[i].end : now;
+          if (segEnd > dataEnd) dataEnd = segEnd;
+        }
+
+        var available = Math.max(0, dataEnd - first);
+        var visibleSpan = Math.min(viewSpan, Math.max(available, 1));
+
+        var right = viewRight === null ? dataEnd : Math.min(viewRight, dataEnd);
+        var left = Math.max(first, right - visibleSpan);
+        if (viewRight !== null) viewRight = Math.max(viewRight, first + visibleSpan);
+
+        var actualSpan = Math.max(1, right - left);
+
+        /* v11: Im Modus "Seit Start" kann der Zeitstrahl umgedreht werden:
+           Anfang rechts, spätere Wellen laufen nach links. */
+        var reversedAxis = (timeMode === "elapsed" && elapsedReversed);
+
+        lastFirst = first;
+        lastRight = right;
+        lastCenter = (left + right) / 2;
+        lastVisibleSpan = visibleSpan;
+        lastDataEnd = dataEnd;
+
+        var padL = 14;
+        var padR = 14;
+        var chartW = w - padL - padR;
+        var y = 56;
+        var barH = 38;
+
+        function mapX(time) {
+          if (reversedAxis) {
+            /* Spiegelung an der Achsenmitte */
+            var normal = padL + ((time - left) / actualSpan) * chartW;
+            return (w - normal) + 0; /* gespiegelt über gesamte Breite */
+          }
+          return padL + ((time - left) / actualSpan) * chartW;
+        }
+
+        ctx.strokeStyle = tc.grid;
+        ctx.lineWidth = 1;
+        ctx.fillStyle = tc.text;
+        ctx.font = "11px system-ui, sans-serif";
+        ctx.textAlign = "center";
+
+        var divisions = 4;
+        for (var d = 0; d <= divisions; d++) {
+          var gx = padL + chartW * d / divisions;
+          ctx.beginPath();
+          ctx.moveTo(gx, 32);
+          ctx.lineTo(gx, 132);
+          ctx.stroke();
+
+          /* Bei umgedrehter Achse gehört zum Gitterstrich d die gespiegelte Zeit */
+          var time = reversedAxis
+            ? right - actualSpan * d / divisions
+            : left + actualSpan * d / divisions;
+          ctx.fillText(axisLabel(timeMode, time - first, time), gx, 155);
+        }
+
+        ctx.fillStyle = tc.track;
+        roundRectPath(padL, y, chartW, barH, 9);
+        ctx.fill();
+
+        ctx.save();
+        roundRectPath(padL, y, chartW, barH, 9);
+        ctx.clip();
+
+        for (var s = 0; s < segments.length; s++) {
+          var segment = segments[s];
+          var end = segment.end !== null && segment.end !== undefined ? segment.end : now;
+          var x1 = mapX(segment.start);
+          var x2 = mapX(end);
+          if (x2 < padL || x1 > w - padR) continue;
+
+          ctx.fillStyle = segment.type === "wave" ? tc.wave : tc.pause;
+          ctx.fillRect(x1, y, Math.max(2, x2 - x1), barH);
+        }
+        ctx.restore();
+
+        if ($("showWater").checked) {
+          var waters = waterEvents(session);
+          for (var wi = 0; wi < waters.length; wi++) {
+            var wEvent = waters[wi];
+            if (wEvent.at < left || wEvent.at > right) continue;
+            var wx = mapX(wEvent.at);
+            if (wx < padL || wx > w - padR) continue;
+
+            ctx.save();
+            ctx.strokeStyle = tc.water;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath();
+            ctx.moveTo(wx, y - 8);
+            ctx.lineTo(wx, y + barH + 6);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = tc.water;
+            ctx.font = "bold 10px system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("BS", wx, y - 13);
+
+            hitTargets.push({
+              type: "water",
+              event: wEvent,
+              num: wi + 1,
+              x: wx,
+              top: y - 28,
+              bottom: y + barH + 14,
+              halfWidth: 30
+            });
+          }
+        }
+
+        if ($("showNotes").checked) {
+          var notes = noteEvents(session);
+          ctx.font = "10px system-ui, sans-serif";
+          for (var ni = 0; ni < notes.length; ni++) {
+            var nEvent = notes[ni];
+            if (nEvent.at < left || nEvent.at > right) continue;
+            var nx = mapX(nEvent.at);
+            if (nx < padL || nx > w - padR) continue;
+
+            ctx.fillStyle = tc.note;
+            ctx.beginPath();
+            ctx.arc(nx, y + barH + 12, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = tc.text;
+            ctx.textAlign = "left";
+            ctx.fillText("N" + (ni + 1), nx + 7, y + barH + 16);
+
+            hitTargets.push({
+              type: "note",
+              event: nEvent,
+              num: ni + 1,
+              x: nx,
+              y: y + barH + 12,
+              radius: 34
+            });
+          }
+        }
+
+        ctx.fillStyle = tc.text;
+        ctx.font = "11px system-ui, sans-serif";
+        ctx.textAlign = "left";
+        var modeText = timeMode === "clock" ? "Uhrzeit" : "Zeit seit erster Welle";
+        if (reversedAxis) modeText += " · umgedreht (Start rechts)";
+        ctx.fillText(modeText, padL, 177);
+      }
+
+      function findHitTarget(clientX, clientY) {
+        if (!hitTargets.length) return null;
+
+        var rect = canvas.getBoundingClientRect();
+        var px = clientX - rect.left;
+        var py = clientY - rect.top;
+
+        var i, target, distance;
+
+        /* Blasensprünge: nur obere Hälfte */
+        for (i = 0; i < hitTargets.length; i++) {
+          target = hitTargets[i];
+          if (target.type !== "water") continue;
+          if (Math.abs(px - target.x) <= target.halfWidth &&
+              py >= target.top && py <= target.bottom && py < 75) {
+            return target;
+          }
+        }
+
+        /* Notizen: nur untere Hälfte */
+        for (i = 0; i < hitTargets.length; i++) {
+          target = hitTargets[i];
+          if (target.type !== "note") continue;
+          if (Math.sqrt((px - target.x) * (px - target.x) + (py - target.y) * (py - target.y)) <= target.radius && py >= 75) {
+            return target;
+          }
+        }
+
+        var best = null;
+        var bestDistance = Infinity;
+
+        for (i = 0; i < hitTargets.length; i++) {
+          target = hitTargets[i];
+          if (target.type === "water") {
+            if (py < target.top || py > target.bottom || py >= 75) continue;
+            distance = Math.abs(px - target.x);
+          } else {
+            distance = Math.sqrt((px - target.x) * (px - target.x) + (py - target.y) * (py - target.y));
+          }
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            best = target;
+          }
+        }
+
+        if (best && bestDistance <= 14) return best;
+        return null;
+      }
+
+      function handleTap(clientX, clientY) {
+        var target = findHitTarget(clientX, clientY);
+        if (target) openDetailDialog(target, Date.now());
+      }
+
+      function render() {
+        var now = Date.now();
+        var session = selectedSession();
+        renderCurrent(now);
+        renderList(session, now);
+        renderHistory();
+        renderCustomTimers(now);
+        drawGraph(now);
+      }
+
+      function setTimeMode(mode) {
+        timeMode = mode;
+        $("modeElapsed").classList.toggle("active", mode === "elapsed");
+        $("modeClock").classList.toggle("active", mode === "clock");
+        $("reverseTime").disabled = (mode !== "elapsed");
+        $("reverseTime").classList.toggle("active", elapsedReversed && mode === "elapsed");
+        drawGraph(Date.now());
+      }
 
       function zoomBy(factor) {
-        zoomSpanHours = Math.max(0.25, Math.min(24 * 7, effectiveSpanHours() * factor));
-        syncSpanButtons();
-        hideTapDetail();
-        drawTimeline(Date.now());
-        scheduleSave();
+        viewSpan = Math.max(MIN_VIEW, Math.min(MAX_VIEW, viewSpan * factor));
+        if (lastDataEnd) {
+          var target = lastCenter + viewSpan / 2;
+          viewRight = target >= lastDataEnd ? null : target;
+        }
+        drawGraph(Date.now());
       }
 
-      $("zoomIn").addEventListener("click", () => zoomBy(1 / 1.5));
-      $("zoomOut").addEventListener("click", () => zoomBy(1.5));
-      $("panBack").addEventListener("click", () => moveView(1));
-      $("panForward").addEventListener("click", () => moveView(-1));
+      /* ===================== v11: Benutzerdefinierte Timer ===================== */
 
-      $("jumpNow").addEventListener("click", () => {
-        viewRight = null;
-        hideTapDetail();
-        drawTimeline(Date.now());
-        scheduleSave();
-      });
+      var ringingTimerId = null;
 
-      /* ============ Messreihen ============ */
+      function startCustomTimer() {
+        var label = $("customTimerLabel").value.replace(/^\s+|\s+$/g, "");
+        var minutes = Math.round(Number($("customTimerMinutes").value));
+        if (!isFinite(minutes) || minutes < 1) minutes = 15;
+        minutes = Math.min(720, Math.max(1, minutes));
 
-      $("finishSeries").addEventListener("click", () => {
-        const session = activeSeries();
-        if (!session || !isCurrentView()) return;
-        if (!confirm("Die aktuelle Messreihe beenden? Sie bleibt in der Historie gespeichert.")) return;
+        customTimers.push({
+          id: makeId(),
+          label: label || "Timer",
+          minutes: minutes,
+          startedAt: Date.now(),
+          fired: false,
+          firedAt: null
+        });
 
-        const now = Date.now();
-        for (const e of session.entries) {
-          if (e.end === null) e.end = now;
+        $("customTimerLabel").value = "";
+        save();
+        renderCustomTimers(Date.now());
+      }
+
+      function renderCustomTimers(now) {
+        var list = $("customTimersList");
+        if (!customTimers.length) {
+          list.innerHTML = '<div class="empty" style="padding:8px 0">Keine Timer aktiv.</div>';
+          return;
         }
-        session.finished = true;
-        session.endedAt = now;
-        lastFiredSlot = "";
-        scheduleSave();
-        renderFeed(now);
-      });
 
-      $("newSeries").addEventListener("click", () => {
-        if (!confirm("Eine neue Messreihe starten? Die bisherige Messreihe wird gespeichert und bleibt in der Historie erhalten.")) return;
+        var html = "";
+        for (var i = 0; i < customTimers.length; i++) {
+          var t = customTimers[i];
+          var endsAt = t.startedAt + t.minutes * 60 * 1000;
+          var rest = endsAt - now;
+          var ringing = rest <= 0 && !t.fired;
 
-        const oldSession = activeSeries();
-        if (oldSession && !oldSession.finished) {
-          const now = Date.now();
-          for (const e of oldSession.entries) {
-            if (e.end === null) e.end = now;
+          if (ringing) {
+            if (!t.fired) {
+              t.fired = true;
+              t.firedAt = now;
+              save();
+            }
           }
-          oldSession.finished = true;
-          oldSession.endedAt = now;
+
+          var restText = rest > 0
+            ? "läuft · noch " + fmt(rest) + " min" + (rest < 60000 ? "" : "")
+            : "abgelaufen (" + (t.firedAt ? agoLabel(now - t.firedAt) : "soeben") + ")";
+
+          html +=
+            '<div class="timer-row' + (rest <= 0 ? " ringing" : "") + '">' +
+              '<div>' +
+                '<span class="timer-name">⏱ ' + escapeHtml(t.label) + '</span>' +
+                ' <span class="timer-rest">' + restText + '</span>' +
+              '</div>' +
+              '<div class="timer-actions">' +
+                (rest <= 0
+                  ? '<button type="button" data-timer-ok="' + t.id + '">OK</button>'
+                  : '<button type="button" class="timer-stop" data-timer-stop="' + t.id + '">Stopp</button>') +
+              '</div>' +
+            '</div>';
         }
 
-        const fresh = makeSeries();
-        series.push(fresh);
-        currentId = fresh.id;
-        selectedId = fresh.id;
-        lastFiredSlot = "";
-        hideTapDetail();
-        applyViewState(fresh);
-        scheduleSave();
-        renderFeed(Date.now());
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        list.innerHTML = html;
+
+        var okButtons = list.querySelectorAll("[data-timer-ok]");
+        for (var o = 0; o < okButtons.length; o++) {
+          okButtons[o].addEventListener("click", function () {
+            removeTimer(this.getAttribute("data-timer-ok"));
+          });
+        }
+        var stopButtons = list.querySelectorAll("[data-timer-stop]");
+        for (var p = 0; p < stopButtons.length; p++) {
+          stopButtons[p].addEventListener("click", function () {
+            if (!confirm("Diesen Timer beenden und entfernen?")) return;
+            removeTimer(this.getAttribute("data-timer-stop"));
+          });
+        }
+      }
+
+      function removeTimer(id) {
+        var kept = [];
+        for (var i = 0; i < customTimers.length; i++) {
+          if (customTimers[i].id !== id) kept.push(customTimers[i]);
+        }
+        customTimers = kept;
+        save();
+        renderCustomTimers(Date.now());
+      }
+
+      $("customTimerStart").addEventListener("click", startCustomTimer);
+      $("customTimerMinutes").addEventListener("keydown", function (event) {
+        if (event.key === "Enter") startCustomTimer();
+      });
+      $("customTimerLabel").addEventListener("keydown", function (event) {
+        if (event.key === "Enter") startCustomTimer();
       });
 
-      /* ============ Export / Import ============ */
+      /* ===================== v11: Export / Import ===================== */
 
-      $("exportData").addEventListener("click", () => {
+      $("exportData").addEventListener("click", function () {
         try {
-          const payload = {
-            app: "still-tracker",
-            version: 3,
+          var payload = {
+            app: "wellen-tracker",
+            version: 2,
             exportedAt: new Date().toISOString(),
-            currentSide, autoSwitch, theme, reminder,
-            series, currentId
+            sessions: sessions,
+            currentId: currentId,
+            theme: theme,
+            customTimers: customTimers
           };
-          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
+          var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+          var url = URL.createObjectURL(blob);
+          var link = document.createElement("a");
           link.href = url;
-          link.download = "still-tracker-backup-" +
+          link.download = "wellen-tracker-backup-" +
             new Date().toISOString().slice(0, 10) + ".json";
           document.body.appendChild(link);
           link.click();
           link.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
         } catch (error) {
           alert("Der Export ist fehlgeschlagen: " + error.message);
         }
       });
 
-      $("importData").addEventListener("click", () => $("importFile").click());
+      $("importData").addEventListener("click", function () {
+        $("importFile").click();
+      });
 
-      $("importFile").addEventListener("change", event => {
-        const file = event.target.files && event.target.files[0];
+      $("importFile").addEventListener("change", function (event) {
+        var file = event.target.files && event.target.files[0];
         event.target.value = "";
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = () => {
+        var reader = new FileReader();
+        reader.onload = function () {
           try {
-            const data = JSON.parse(reader.result);
-            if (!data || data.app !== "still-tracker" || !Array.isArray(data.series)) {
-              alert("Diese Datei ist keine gültige Still-Tracker-Sicherung.");
+            var data = JSON.parse(reader.result);
+            if (!data || data.app !== "wellen-tracker" || !Array.isArray(data.sessions)) {
+              alert("Diese Datei ist keine gültige Wellen-Tracker-Sicherung.");
               return;
             }
             if (!confirm(
-              "Die Sicherung (Stand " + (data.exportedAt || "unbekannt") + ") importieren? " +
+              "Die Sicherung (Stand " + (data.exportedAt || "unbekannt") + ") importieren?\n" +
               "Die aktuellen Daten in diesem Browser werden dabei ersetzt."
             )) return;
 
-            if (data.currentSide === "left" || data.currentSide === "right") {
-              currentSide = data.currentSide;
+            var imported = [];
+            for (var i = 0; i < data.sessions.length; i++) {
+              var clean = cleanSession(data.sessions[i]);
+              if (clean) imported.push(clean);
             }
-            autoSwitch = data.autoSwitch === "off" ? "off" : "on";
+            if (!imported.length) {
+              alert("Die Sicherung enthält keine verwertbaren Messungen.");
+              return;
+            }
+
+            sessions = imported;
+            currentId = typeof data.currentId === "string" ? data.currentId : null;
+            var found = false;
+            for (var m = 0; m < sessions.length; m++) {
+              if (sessions[m].id === currentId) { found = true; break; }
+            }
+            if (!found) currentId = sessions[sessions.length - 1].id;
+
             theme = { mode: "manual", dark: false, start: "20:00", end: "07:00" };
             loadTheme(data.theme);
-            reminder = {
-              enabled: false, mode: "interval",
-              times: ["02:00", "06:00"], intervalMin: 180,
-              frameOn: false, frameStart: "22:00", frameEnd: "06:00",
-              manualMin: 180, manualUntil: 0,
-              volume: 0.6, tone: "default", customName: "", customData: "",
-              wakeOn: true
-            };
-            loadReminder(data.reminder);
+            customTimers = cleanTimers(data.customTimers);
 
-            const norm = normalizeSessions(data.series, data.currentId);
-            series = norm.sessions;
-            currentId = norm.current;
-
-            if (!activeSeries()) {
-              const fresh = makeSeries();
-              series.push(fresh);
-              currentId = fresh.id;
-            }
             selectedId = currentId;
+            viewRight = null;
+            viewSpan = 20 * 60 * 1000;
+            elapsedReversed = false;
+            $("reverseTime").classList.remove("active");
 
-            $("autoSwitch").value = autoSwitch;
             $("themeMode").value = theme.mode;
             $("themeStart").value = theme.start;
             $("themeEnd").value = theme.end;
             $("themeWindowRow").hidden = theme.mode !== "window";
             applyTheme(true);
-            syncReminderUI();
 
-            lastFiredSlot = "";
-            customAudio = null;
-            stopAlarm();
-            hideTapDetail();
-            applyViewState(activeSeries());
-            scheduleSave();
-            renderFeed(Date.now());
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            save();
+            render();
+            window.scrollTo(0, 0);
             alert("Sicherung erfolgreich importiert.");
           } catch (error) {
             alert("Der Import ist fehlgeschlagen: " + error.message);
@@ -2722,101 +1985,241 @@
         reader.readAsText(file);
       });
 
-      /* ============ Hilfe ============ */
+      /* ===================== v11: Zeitstrahl umdrehen ===================== */
 
-      $("helpButton").addEventListener("click", () => $("helpDialog").showModal());
-      $("helpClose").addEventListener("click", () => $("helpDialog").close());
-      $("helpDialog").addEventListener("click", event => {
-        if (event.target === $("helpDialog")) $("helpDialog").close();
+      $("reverseTime").addEventListener("click", function () {
+        if (timeMode !== "elapsed") return;
+        elapsedReversed = !elapsedReversed;
+        this.classList.toggle("active", elapsedReversed);
+        drawGraph(Date.now());
       });
 
-      /* ============ Sofortspeichern beim Schließen/Verbergen ============ */
+      /* ===================== Ereignisse ===================== */
 
-      window.addEventListener("pagehide", () => {
-        releaseWakeLock();
-        document.body.classList.remove("screen-dim");
-        persistState();
-      });
-      window.addEventListener("beforeunload", persistState);
+      $("toggle").addEventListener("click", function () {
+        /* Fall A: Alte (nicht aktive) Messung anzeigen → zur aktiven machen */
+        if (selectedId !== currentId) {
+          if (!confirm("Diese gespeicherte Messung zur aktiven Messung machen und hier eine neue Welle starten? Die bisher aktive Messung wird dabei beendet.")) {
+            return;
+          }
 
-      /* ============ Start ============ */
+          var now = Date.now();
 
-      function renderFeed(now) {
-        updateControls(now);
-        renderLastFeed(now);
-        drawTimeline(now);
-        renderStats(now);
-        renderFeedList();
-        renderHistory();
-        renderReminderBanner(now);
-      }
+          var oldActive = activeSession();
+          if (oldActive && !oldActive.finished) {
+            closeOpenSegment(oldActive, now);
+            oldActive.finished = true;
+            oldActive.endedAt = now;
+          }
 
-      /* ============ v25: Akkuwarnung (unter 50 %, im Wach-Modus) ============ */
+          currentId = selectedId;
+          var session = selectedSession();
+          session.finished = false;
+          session.endedAt = null;
+          session.segments.push({ type: "wave", start: now, end: null });
 
-      let batteryBanner = null;
-
-      async function watchBattery() {
-        if (!navigator.getBattery) return;   // z. B. iOS Safari / Firefox: keine Batterie-Infos
-        try {
-          const bat = await navigator.getBattery();
-          const update = () => {
-            const relevant = wakeWanted(new Date());   // Warnung nur, wenn Wach-Modus scharf ist
-            const low = relevant && !bat.charging && bat.level <= 0.5;
-            if (low) {
-              if (!batteryBanner) {
-                batteryBanner = document.createElement("div");
-                batteryBanner.setAttribute("role", "alert");
-                Object.assign(batteryBanner.style, {
-                  position: "sticky", top: "0", zIndex: "9998",
-                  margin: "0", padding: "10px 16px",
-                  background: "#efe2cc", color: "#6b4e0d",
-                  fontSize: ".85rem", lineHeight: "1.5",
-                  borderBottom: "2px solid #bfa878"
-                });
-                $("wakeMain").prepend(batteryBanner);
-              }
-              batteryBanner.hidden = false;
-              batteryBanner.textContent =
-                "🔋 Akku nur noch " + Math.round(bat.level * 100) + " % – der Wach-Modus verbraucht " +
-                "deutlich Energie. Bitte das Gerät anschließen, damit die Erinnerung zuverlässig klingelt.";
-            } else if (batteryBanner) {
-              batteryBanner.hidden = true;
-            }
-          };
-          bat.addEventListener("levelchange", update);
-          bat.addEventListener("chargingchange", update);
-          update();
-          // Auch reagieren, wenn der Wach-Modus später ein-/ausschaltet
-          setInterval(update, 60000);
-        } catch { /* Battery API nicht verfügbar */ }
-      }
-      watchBattery();
-      loadAll();
-      applyTheme(false);
-      resizeGraph();
-      renderFeed(Date.now());
-      checkReminder(Date.now());
-      updateWakeLock();
-
-      window.addEventListener("resize", () => {
-        resizeGraph();
-        if (openDetail) hideTapDetail();
-      });
-
-      window.setInterval(() => {
-        const now = Date.now();
-        renderFeed(now);
-        checkReminder(now);
-        dimCheck(now);
-        updateWakeLock();
-
-        // Zeitfenster- und OS-Modus laufend prüfen
-        if (theme.mode !== "manual") {
-          const dark = document.documentElement.getAttribute("data-theme") === "dark";
-          const wantDark = themeShouldBeDark(new Date(now));
-          if (dark !== wantDark) applyTheme(true);
+          viewRight = null;
+          save();
+          render();
+          return;
         }
-      }, 500);
+
+        /* Fall B: Normales Verhalten */
+        var session2 = activeSession();
+        if (!session2) return;
+
+        var now2 = Date.now();
+        var active = findLastMatch(session2.segments, function (s) { return s.end === null; });
+
+        if (!active) {
+          session2.finished = false;
+          session2.endedAt = null;
+          session2.segments.push({ type: "wave", start: now2, end: null });
+        } else if (active.type === "wave") {
+          active.end = now2;
+          session2.segments.push({ type: "pause", start: now2, end: null });
+        } else {
+          active.end = now2;
+          session2.segments.push({ type: "wave", start: now2, end: null });
+        }
+
+        viewRight = null;
+        save();
+        render();
+      });
+
+      $("averageWindow").addEventListener("change", render);
+      $("addWater").addEventListener("click", addWater);
+      $("addNote").addEventListener("click", addNote);
+      $("showWater").addEventListener("change", function () { drawGraph(Date.now()); });
+      $("showNotes").addEventListener("change", function () { drawGraph(Date.now()); });
+
+      $("modeElapsed").addEventListener("click", function () { setTimeMode("elapsed"); });
+      $("modeClock").addEventListener("click", function () { setTimeMode("clock"); });
+
+      $("zoomIn").addEventListener("click", function () { zoomBy(1 / 1.5); });
+      $("zoomOut").addEventListener("click", function () { zoomBy(1.5); });
+
+      $("resetView").addEventListener("click", function () {
+        var session = selectedSession();
+        var segments = session ? session.segments : [];
+        if (!segments.length) return;
+
+        var first = segments[0].start;
+        var end = session.finished && session.endedAt ? session.endedAt : Date.now();
+        viewSpan = Math.max(MIN_VIEW, Math.min(MAX_VIEW, end - first));
+        viewRight = null;
+        drawGraph(Date.now());
+      });
+
+      wrap.addEventListener("touchstart", function (event) {
+        if (event.touches.length === 2) {
+          var distance = Math.sqrt(
+            (event.touches[0].clientX - event.touches[1].clientX) * (event.touches[0].clientX - event.touches[1].clientX) +
+            (event.touches[0].clientY - event.touches[1].clientY) * (event.touches[0].clientY - event.touches[1].clientY)
+          );
+          gesture = { type: "pinch", distance: distance, span: viewSpan, center: lastCenter };
+          touchStart = null;
+        } else if (event.touches.length === 1) {
+          gesture = {
+            type: "pan",
+            x: event.touches[0].clientX,
+            right: lastRight,
+            minRight: lastFirst + lastVisibleSpan
+          };
+          touchStart = {
+            x: event.touches[0].clientX,
+            y: event.touches[0].clientY,
+            time: Date.now()
+          };
+        }
+      }, { passive: false });
+
+      wrap.addEventListener("touchmove", function (event) {
+        if (!gesture) return;
+        event.preventDefault();
+
+        if (event.touches.length === 2 && gesture.type === "pinch") {
+          var distance = Math.sqrt(
+            (event.touches[0].clientX - event.touches[1].clientX) * (event.touches[0].clientX - event.touches[1].clientX) +
+            (event.touches[0].clientY - event.touches[1].clientY) * (event.touches[0].clientY - event.touches[1].clientY)
+          );
+          var ratio = gesture.distance / Math.max(1, distance);
+          viewSpan = Math.max(MIN_VIEW, Math.min(MAX_VIEW, gesture.span * ratio));
+
+          if (lastDataEnd) {
+            var target = gesture.center + viewSpan / 2;
+            viewRight = target >= lastDataEnd ? null : target;
+          }
+
+          drawGraph(Date.now());
+        } else if (event.touches.length === 1 && gesture.type === "pan") {
+          var dx = event.touches[0].clientX - gesture.x;
+          var msPerPixel = viewSpan / Math.max(1, canvas.clientWidth);
+          viewRight = Math.max(gesture.minRight, gesture.right - dx * msPerPixel);
+          drawGraph(Date.now());
+        }
+      }, { passive: false });
+
+      wrap.addEventListener("touchend", function (event) {
+        if (gesture && gesture.type === "pan" && touchStart && event.changedTouches.length === 1) {
+          var dx = event.changedTouches[0].clientX - touchStart.x;
+          var dy = event.changedTouches[0].clientY - touchStart.y;
+          var moved = Math.sqrt(dx * dx + dy * dy);
+          var elapsed = Date.now() - touchStart.time;
+
+          if (moved < 14 && elapsed < 600) {
+            handleTap(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
+            event.preventDefault();
+          }
+        }
+
+        gesture = null;
+        touchStart = null;
+      }, { passive: false });
+
+      wrap.addEventListener("touchcancel", function () {
+        gesture = null;
+        touchStart = null;
+      });
+
+      wrap.addEventListener("click", function (event) {
+        handleTap(event.clientX, event.clientY);
+      });
+
+      $("dialogClose").addEventListener("click", function () {
+        $("detailDialog").close();
+      });
+
+      $("detailDialog").addEventListener("click", function (event) {
+        if (event.target === $("detailDialog")) $("detailDialog").close();
+      });
+
+      var helpDialog = $("helpDialog");
+      $("helpButton").addEventListener("click", function () { helpDialog.showModal(); });
+      $("helpClose").addEventListener("click", function () { helpDialog.close(); });
+      helpDialog.addEventListener("click", function (event) {
+        if (event.target === helpDialog) helpDialog.close();
+      });
+
+      $("finishSession").addEventListener("click", function () {
+        var session = activeSession();
+        if (!session || selectedId !== currentId || session.finished) return;
+
+        if (!confirm("Die aktuelle Messung beenden? Sie bleibt in der Historie gespeichert. Per „Welle starten“ kann sie später fortgesetzt werden.")) return;
+
+        var now = Date.now();
+        closeOpenSegment(session, now);
+        session.finished = true;
+        session.endedAt = now;
+        save();
+        render();
+      });
+
+      $("newSession").addEventListener("click", function () {
+        if (!confirm("Eine neue Messung starten? Die bisherige Messung wird gespeichert und bleibt in der Historie erhalten.")) {
+          return;
+        }
+
+        var oldSession = activeSession();
+        if (oldSession && !oldSession.finished) {
+          var now = Date.now();
+          closeOpenSegment(oldSession, now);
+          oldSession.finished = true;
+          oldSession.endedAt = now;
+        }
+
+        var fresh = makeSession();
+        sessions.push(fresh);
+        currentId = fresh.id;
+        selectedId = fresh.id;
+        viewRight = null;
+        viewSpan = 20 * 60 * 1000;
+        save();
+        render();
+        window.scrollTo(0, 0);
+      });
+
+      $("returnCurrent").addEventListener("click", function () {
+        selectedId = currentId;
+        viewRight = null;
+        render();
+      });
+
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "hidden") save();
+      });
+      window.addEventListener("pagehide", save);
+      window.addEventListener("beforeunload", save);
+
+      window.addEventListener("resize", resizeCanvas);
+
+      load();
+      applyTheme(false);
+      resizeCanvas();
+      render();
+
+      window.setInterval(render, 500);
     })();
   </script>
 </body>
